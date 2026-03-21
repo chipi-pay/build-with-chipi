@@ -1,0 +1,50 @@
+name: Showcase
+description: "Share something you built with @chipi-stack!"
+title: "[Showcase]: "
+labels: ["showcase"]
+body:
+  - type: input
+    id: project-name
+    attributes:
+      label: Project name
+      placeholder: "My awesome app"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What does it do?
+      description: Tell us about your project
+    validations:
+      required: true
+
+  - type: dropdown
+    id: packages
+    attributes:
+      label: Packages used
+      description: Which @chipi-stack packages does your project use?
+      multiple: true
+      options:
+        - "@chipi-stack/core"
+        - "@chipi-stack/backend"
+        - "@chipi-stack/chipi-react"
+        - "@chipi-stack/nextjs"
+        - "@chipi-stack/chipi-expo"
+        - "@chipi-stack/x402"
+        - "@chipi-stack/chipi-passkey"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Link
+      description: URL to your project, demo, or repo
+      placeholder: "https://..."
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or demo
+      description: Drag and drop an image or paste a link to a video/gif

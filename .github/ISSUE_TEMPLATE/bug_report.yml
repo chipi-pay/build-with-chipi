@@ -1,0 +1,74 @@
+name: Bug Report
+description: Report a bug in a @chipi-stack package
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which @chipi-stack package is affected?
+      options:
+        - "@chipi-stack/core"
+        - "@chipi-stack/backend"
+        - "@chipi-stack/chipi-react"
+        - "@chipi-stack/nextjs"
+        - "@chipi-stack/chipi-expo"
+        - "@chipi-stack/x402"
+        - "@chipi-stack/chipi-passkey"
+        - "@chipi-stack/types"
+        - "@chipi-stack/shared"
+        - "Other / Not sure"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: "Run `npm list @chipi-stack/<package>` to find the version"
+      placeholder: "e.g. 14.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Install `@chipi-stack/backend@14.1.0`
+        2. Call `chipi.createWallet(...)`
+        3. See error: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: "Node version, framework, OS"
+      placeholder: "e.g. Node 20.11, Next.js 14.2, macOS"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Error logs, screenshots, or anything else that might help

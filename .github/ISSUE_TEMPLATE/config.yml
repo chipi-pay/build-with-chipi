@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.chipipay.com
+    about: Check the docs for guides and API reference
+  - name: Support
+    url: mailto:carlos@chipipay.com
+    about: Contact us directly for urgent issues

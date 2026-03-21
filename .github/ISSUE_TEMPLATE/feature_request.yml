@@ -1,0 +1,53 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package should this feature be added to?
+      options:
+        - "@chipi-stack/core"
+        - "@chipi-stack/backend"
+        - "@chipi-stack/chipi-react"
+        - "@chipi-stack/nextjs"
+        - "@chipi-stack/chipi-expo"
+        - "@chipi-stack/x402"
+        - "@chipi-stack/chipi-passkey"
+        - "@chipi-stack/types"
+        - "@chipi-stack/shared"
+        - "New package"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to accomplish? What's the pain point?
+      placeholder: "I'm building a ... and I need to ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work? Code examples are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or alternative approaches you've tried?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links, screenshots, or related issues
