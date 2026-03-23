@@ -1,0 +1,126 @@
+name: Tutorial Completeness Check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tutorial PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            
+            const prBody = context.payload.pull_request.body || '';
+            const checks = [];
+            
+            // 1. Check YouTube link
+            const ytRegex = /(youtube\.com\/watch|youtu\.be\/)/i;
+            const hasYoutube = ytRegex.test(prBody);
+            checks.push({
+              name: 'YouTube video',
+              pass: hasYoutube,
+              detail: hasYoutube
+                ? prBody.match(/(https?:\/\/(www\.)?(youtube\.com\/watch\S+|youtu\.be\/\S+))/i)?.[1] || 'Found'
+                : 'Missing video link. Paste your YouTube URL in the PR description.'
+            });
+            
+            // 2. Find VALIDATION.md in changed files
+            const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().split('\n');
+            const validationFile = changedFiles.find(f => f.includes('VALIDATION.md'));
+            checks.push({
+              name: 'VALIDATION.md',
+              pass: !!validationFile,
+              detail: validationFile || 'No VALIDATION.md found in changed files.'
+            });
+            
+            // 3. Parse VALIDATION.md for completeness
+            if (validationFile && fs.existsSync(validationFile)) {
+              const content = fs.readFileSync(validationFile, 'utf-8');
+              
+              // Check SDK version
+              const hasVersion = /SDK Version:.+\S/i.test(content);
+              checks.push({
+                name: 'SDK version stated',
+                pass: hasVersion,
+                detail: hasVersion ? content.match(/SDK Version:\s*(.+)/i)?.[1]?.trim() : 'Missing SDK version in header.'
+              });
+              
+              // Check all features scored
+              const passCount = (content.match(/\|\s*PASS\s*\|/gi) || []).length;
+              const failCount = (content.match(/\|\s*FAIL\s*\|/gi) || []).length;
+              const totalScored = passCount + failCount;
+              const hasUnscored = /\|\s*PASS\s*\/\s*FAIL\s*\|/i.test(content);
+              checks.push({
+                name: 'All features scored',
+                pass: totalScored > 0 && !hasUnscored,
+                detail: hasUnscored
+                  ? 'VALIDATION.md has unscored features (PASS / FAIL still present).'
+                  : `${passCount} passed, ${failCount} failed (${totalScored} total)`
+              });
+              
+              // Pass rate (warning only)
+              if (totalScored > 0) {
+                const rate = Math.round((passCount / totalScored) * 100);
+                checks.push({
+                  name: 'Pass rate',
+                  pass: true,
+                  detail: `${rate}% (${passCount}/${totalScored})${failCount > 0 ? ' — check filed bugs' : ''}`
+                });
+              }
+              
+              // Check hooks in code
+              const hookMatches = content.match(/\|\s*(use\w+|create\w+)\s*\|/g) || [];
+              const hooks = hookMatches.map(m => m.replace(/\|/g, '').trim());
+              if (hooks.length > 0) {
+                const tutorialDir = validationFile.split('/').slice(0, -1).join('/');
+                let srcContent = '';
+                try {
+                  srcContent = execSync(`find ${tutorialDir} -name "*.tsx" -o -name "*.ts" -o -name "*.py" | head -50 | xargs cat 2>/dev/null`).toString();
+                } catch {}
+                
+                const missingHooks = hooks.filter(h => !srcContent.includes(h));
+                checks.push({
+                  name: 'Hooks in code',
+                  pass: missingHooks.length === 0,
+                  detail: missingHooks.length === 0
+                    ? `${hooks.length}/${hooks.length} found in source`
+                    : `Missing: ${missingHooks.join(', ')}`
+                });
+              }
+            }
+            
+            // Build scorecard
+            const passed = checks.filter(c => c.pass).length;
+            const total = checks.length;
+            const allPassed = passed === total;
+            
+            let body = `## Tutorial Completeness Check\n\n`;
+            for (const check of checks) {
+              const icon = check.pass ? '✅' : '❌';
+              body += `${icon} **${check.name}:** ${check.detail}\n`;
+            }
+            body += `\n**Score: ${passed}/${total} checks passed.** ${allPassed ? 'Ready for review.' : 'Please fix the issues above.'}`;
+            
+            // Post comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body
+            });
+            
+            if (!allPassed) {
+              core.setFailed(`Tutorial completeness: ${passed}/${total} checks passed`);
+            }
