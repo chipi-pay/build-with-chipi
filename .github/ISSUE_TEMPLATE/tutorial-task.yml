@@ -1,0 +1,105 @@
+name: "Tutorial Task"
+description: "A tutorial assignment that validates docs + SDK features from scratch"
+title: "tutorial: "
+labels: ["tutorial"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Instructions
+        1. Start a **new project from scratch** (empty folder)
+        2. Follow the docs pages listed below **exactly as written**
+        3. For each page: does the install work? does the code compile? does the feature work?
+        4. If something doesn't work: screenshot the error, file a bug in the correct repo, link it here
+        5. Push the working project + VALIDATION.md + record video
+
+  - type: input
+    id: framework
+    attributes:
+      label: Framework
+      description: "Which framework for this tutorial"
+      placeholder: "Next.js / React / Expo / Python"
+    validations:
+      required: true
+
+  - type: input
+    id: auth-provider
+    attributes:
+      label: Auth Provider
+      description: "Which auth provider to use (JS only)"
+      placeholder: "Clerk / Firebase / Supabase / Better Auth / Custom / N/A"
+    validations:
+      required: true
+
+  - type: textarea
+    id: docs-pages
+    attributes:
+      label: "Docs pages to follow (in order)"
+      description: "List the exact docs.chipipay.com URLs to follow step by step"
+      placeholder: |
+        1. https://docs.chipipay.com/sdk/nextjs/gasless-quickstart
+        2. https://docs.chipipay.com/sdk/nextjs/gasless-clerk-setup
+        3. https://docs.chipipay.com/sdk/nextjs/use-passkeys
+    validations:
+      required: true
+
+  - type: textarea
+    id: features-to-test
+    attributes:
+      label: "Features to test"
+      description: "Checklist of features that must work in the final project"
+      placeholder: |
+        - [ ] Wallet creation with passkey
+        - [ ] View USDC balance
+        - [ ] Send USDC gaslessly
+        - [ ] Transaction history
+    validations:
+      required: true
+
+  - type: textarea
+    id: hooks-to-exercise
+    attributes:
+      label: "Hooks / methods to exercise"
+      description: "Every hook or SDK method that must appear in the code"
+      placeholder: |
+        - useCreateWallet
+        - useGetWallet
+        - useGetTokenBalance
+        - useTransfer
+        - createWalletPasskey
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## When something doesn't work
+        1. Screenshot the error
+        2. File a bug in the **correct repo**:
+           - SDK bug → `chipi-pay/sdks` (use bug report template)
+           - Backend bug → `chipi-pay/chipi-back`
+           - Docs wrong → `chipi-pay/sdks` (docs live in sdks/docs/)
+        3. Link the bug issue in the comments here
+        4. Mark the feature as FAIL in VALIDATION.md
+        5. Continue with the next feature
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Deliverables checklist
+        - [ ] Working project in `tutorials/XX-slug/`
+        - [ ] Project builds from clean clone: `git clone → npm install → npm run build`
+        - [ ] `VALIDATION.md` with pass/fail for each docs page + each feature
+        - [ ] Every hook listed above is used in the code
+        - [ ] Recording: 5-8 min video showing features working
+        - [ ] All bugs found filed as issues (linked in comments)
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Quality criteria (PR will be rejected if not met)
+        1. Clean clone test: someone else can `git clone → install → build → run`
+        2. Every hook/method listed above appears in the source code
+        3. VALIDATION.md exists with clear PASS/FAIL per docs page
+        4. Video shows the features actually working (or failing with bug filed)
+        5. No copy-pasted code without understanding — you should be able to explain what each hook does
