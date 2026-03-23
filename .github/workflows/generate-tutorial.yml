@@ -1,0 +1,373 @@
+name: Generate Tutorial Project
+
+on:
+  repository_dispatch:
+    types: [generate-tutorial]
+  workflow_dispatch:
+    inputs:
+      template_file:
+        description: 'Template filename (e.g., 01-nextjs-clerk.json)'
+        required: true
+      issue_number:
+        description: 'Issue number to comment on'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve inputs
+        id: inputs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let templateFile, issueNumber;
+            if (context.eventName === 'repository_dispatch') {
+              templateFile = context.payload.client_payload.template_file;
+              issueNumber = context.payload.client_payload.issue_number;
+            } else {
+              templateFile = context.payload.inputs.template_file;
+              issueNumber = context.payload.inputs.issue_number;
+            }
+            if (!templateFile || !issueNumber) {
+              core.setFailed('Missing required inputs: template_file and issue_number');
+              return;
+            }
+            core.setOutput('template_file', templateFile);
+            core.setOutput('issue_number', String(issueNumber));
+            core.setOutput('slug', templateFile.replace('.json', ''));
+            console.log(`Template: ${templateFile}, Issue: #${issueNumber}`);
+
+      - name: Fetch docs and generate project
+        id: generate
+        uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const templateFile = '${{ steps.inputs.outputs.template_file }}';
+            const slug = '${{ steps.inputs.outputs.slug }}';
+            const templatesDir = '.github/tutorial-templates';
+            const template = JSON.parse(fs.readFileSync(path.join(templatesDir, templateFile), 'utf-8'));
+
+            // --- Fetch docs from sdks repo (MDX source) ---
+            const docsContent = [];
+            for (const url of (template.docs_pages || [])) {
+              const docPath = url.replace('https://docs.chipipay.com/', 'docs/');
+              let fetched = false;
+
+              for (const ext of ['.mdx', '.md']) {
+                if (fetched) break;
+                try {
+                  const { data } = await github.rest.repos.getContent({
+                    owner: 'chipi-pay', repo: 'sdks', path: docPath + ext
+                  });
+                  const content = Buffer.from(data.content, 'base64').toString();
+                  docsContent.push({ url, content });
+                  fetched = true;
+                  console.log(`Fetched: ${docPath + ext}`);
+                } catch (e) {
+                  console.log(`Could not fetch ${docPath + ext}: ${e.message}`);
+                }
+              }
+
+              if (!fetched) {
+                try {
+                  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+                  if (res.ok) {
+                    const html = await res.text();
+                    const text = html
+                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+                      .replace(/<[^>]+>/g, ' ')
+                      .replace(/\s+/g, ' ')
+                      .trim().slice(0, 8000);
+                    docsContent.push({ url, content: text });
+                    fetched = true;
+                    console.log(`Fetched HTML: ${url}`);
+                  }
+                } catch (e) {
+                  console.log(`Could not fetch HTML ${url}: ${e.message}`);
+                }
+              }
+
+              if (!fetched) {
+                docsContent.push({ url, content: '[Page not found — may not exist yet]' });
+                console.log(`Missing: ${url}`);
+              }
+            }
+
+            // --- Parse features from template body ---
+            const featuresMatch = template.body.match(/## Features to test\n\n([\s\S]*?)(?=\n## )/);
+            const features = featuresMatch
+              ? (featuresMatch[1].match(/- \[ \] (.+)/g) || []).map(f => f.replace('- [ ] ', ''))
+              : [];
+
+            // --- Extract framework and auth from body ---
+            const framework = template.body.match(/## Framework:\s*(.+)/)?.[1]?.trim() || 'unknown';
+            const auth = template.body.match(/## Auth Provider:\s*(.+)/)?.[1]?.trim() || 'unknown';
+
+            // --- Build Claude prompt ---
+            const docsSection = docsContent.map(d =>
+              `### ${d.url}\n\n${d.content}`
+            ).join('\n\n---\n\n');
+
+            const prompt = `You are generating a complete, buildable tutorial project for the Chipi SDK.
+            Your code will be tested by a QA engineer who validates that the docs are correct.
+
+## Project
+${template.title}
+Framework: ${framework}
+Auth: ${auth}
+
+## Rules
+1. Follow the documentation pages EXACTLY as written. Use the code examples from docs as-is.
+2. Every hook/method listed below MUST appear in your source code and be functional.
+3. The project must work from a clean clone: git clone, install, build, run.
+4. Include .env.example with placeholder values. NEVER include real API keys or secrets.
+5. Keep the code clean and minimal. No extra features beyond what the docs describe.
+6. If a docs page seems wrong or missing info, add a comment: // DOCS-ISSUE: description
+7. Use the EXACT import paths and API patterns shown in the docs.
+8. For Starknet addresses, use mainnet USDC: 0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb
+
+## Packages to install
+${(template.packages || []).join(', ')}
+
+## Hooks/methods that MUST appear in code
+${(template.hooks_to_exercise || []).join(', ')}
+
+## Documentation pages (follow in this order)
+
+${docsSection}
+
+## Output format
+Output each file using this EXACT format (markers must be on their own line):
+
+=== FILE: path/to/file.ext ===
+file content here
+=== END FILE ===
+
+Generate ALL files needed. Include:
+- package.json (or requirements.txt for Python) with @chipi-stack packages at ^${template.min_sdk_version || '14.1.0'}
+- All config files (tsconfig.json, next.config.js/mjs, tailwind.config.ts, etc.)
+- All source files with working UI components
+- .env.example with descriptive placeholder values
+- .gitignore
+
+Do NOT include: node_modules, .env, lock files, or test files.
+File paths are relative to the project root (e.g., package.json, not tutorials/slug/package.json).`;
+
+            // --- Call Claude API ---
+            console.log(`Calling Claude API (${docsContent.length} docs fetched)...`);
+            const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-5-20241022',
+                max_tokens: 16384,
+                messages: [{ role: 'user', content: prompt }]
+              }),
+              signal: AbortSignal.timeout(300000) // 5 min timeout
+            });
+
+            if (!apiResponse.ok) {
+              const err = await apiResponse.text();
+              core.setFailed(`Claude API error (${apiResponse.status}): ${err.slice(0, 500)}`);
+              return;
+            }
+
+            const apiResult = await apiResponse.json();
+            const generatedText = apiResult.content[0].text;
+            console.log(`Generated ${generatedText.length} chars, ${apiResult.usage?.output_tokens || '?'} tokens`);
+
+            // --- Parse files from response ---
+            const files = [];
+            const fileRegex = /=== FILE: (.+?) ===([\s\S]*?)=== END FILE ===/g;
+            let match;
+            while ((match = fileRegex.exec(generatedText)) !== null) {
+              files.push({
+                path: match[1].trim(),
+                content: match[2].replace(/^\n/, '').replace(/\n$/, '')
+              });
+            }
+
+            if (files.length === 0) {
+              fs.writeFileSync('/tmp/claude-raw-response.txt', generatedText);
+              core.setFailed(`No files parsed from Claude response (${generatedText.length} chars). Raw saved to /tmp/claude-raw-response.txt`);
+              return;
+            }
+
+            // --- Write project files (with path traversal protection) ---
+            const tutorialDir = path.resolve('tutorials', slug);
+            fs.mkdirSync(tutorialDir, { recursive: true });
+
+            for (const file of files) {
+              // Sanitize: reject paths with .., absolute paths, or escaping the tutorial dir
+              const sanitized = file.path.replace(/\.\./g, '').replace(/^\//, '');
+              const filePath = path.resolve(tutorialDir, sanitized);
+              if (!filePath.startsWith(tutorialDir)) {
+                console.log(`SKIP (path escape): ${file.path}`);
+                continue;
+              }
+              fs.mkdirSync(path.dirname(filePath), { recursive: true });
+              fs.writeFileSync(filePath, file.content);
+              console.log(`Wrote: ${sanitized}`);
+            }
+
+            // --- Generate VALIDATION.md skeleton ---
+            let validation = `# ${template.title} — Validation Report\n\n`;
+            validation += `- **Framework:** ${framework}\n`;
+            validation += `- **Auth Provider:** ${auth}\n`;
+            validation += `- **SDK Version:** <!-- run: npm list @chipi-stack/nextjs or pip show chipi-python -->\n`;
+            validation += `- **Date:** <!-- fill in -->\n`;
+            validation += `- **Tester:** @YrandaNova\n\n`;
+
+            validation += `## Docs Pages\n\n`;
+            validation += `| # | Page | PASS / FAIL | Notes |\n|---|------|-------------|-------|\n`;
+            (template.docs_pages || []).forEach((url, i) => {
+              const name = url.split('/').pop().replace(/-/g, ' ');
+              validation += `| ${i + 1} | [${name}](${url}) | PASS / FAIL | |\n`;
+            });
+
+            validation += `\n## Hooks / Methods\n\n`;
+            validation += `| Hook | In Code | Works | YES / NO |\n|------|---------|-------|----------|\n`;
+            (template.hooks_to_exercise || []).forEach(hook => {
+              validation += `| ${hook} | YES / NO | YES / NO | |\n`;
+            });
+
+            validation += `\n## Features\n\n`;
+            validation += `| Feature | PASS / FAIL | Bug Filed | Notes |\n|---------|-------------|-----------|-------|\n`;
+            features.forEach(f => {
+              validation += `| ${f} | PASS / FAIL | | |\n`;
+            });
+
+            validation += `\n## Bugs Found\n\n`;
+            validation += `<!-- Link each bug issue here: -->\n`;
+            validation += `<!-- - chipi-pay/sdks#XXX — description -->\n`;
+            validation += `<!-- - chipi-pay/chipi-back#XXX — description -->\n\n`;
+
+            validation += `## Recording\n\n`;
+            validation += `<!-- YouTube URL: -->\n`;
+            validation += `<!-- Duration: X:XX -->\n`;
+
+            fs.writeFileSync(path.join(tutorialDir, 'VALIDATION.md'), validation);
+            console.log('Wrote: VALIDATION.md');
+
+            core.setOutput('slug', slug);
+            core.setOutput('tutorial_dir', tutorialDir);
+            core.setOutput('file_count', String(files.length + 1));
+            core.setOutput('framework', framework);
+
+      - name: Create branch and commit
+        id: push
+        run: |
+          SLUG="${{ steps.inputs.outputs.slug }}"
+          DIR="tutorials/${SLUG}"
+
+          git config user.name "build-with-chipi[bot]"
+          git config user.email "build-with-chipi[bot]@users.noreply.github.com"
+          git checkout -b "tutorial/${SLUG}"
+          git add "${DIR}"
+          git commit -m "feat: generate tutorial ${SLUG}"
+          git push -u origin "tutorial/${SLUG}"
+
+          echo "branch=tutorial/${SLUG}" >> $GITHUB_OUTPUT
+
+      - name: Create draft PR and comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const slug = '${{ steps.inputs.outputs.slug }}';
+            const branch = '${{ steps.push.outputs.branch }}';
+            const fileCount = '${{ steps.generate.outputs.file_count }}';
+            const framework = '${{ steps.generate.outputs.framework }}';
+            const issueNumber = parseInt('${{ steps.inputs.outputs.issue_number }}');
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `tutorial: ${slug}`,
+              body: [
+                `Closes #${issueNumber}`,
+                '',
+                `**${fileCount} files** generated from docs for ${framework}.`,
+                '',
+                '## For @YrandaNova',
+                '',
+                '1. `git fetch origin && git checkout ' + branch + '`',
+                '2. `cd tutorials/' + slug + '`',
+                '3. Install and run (see package.json scripts)',
+                '4. Test every feature listed in the issue',
+                '5. Fill in `VALIDATION.md` with PASS/FAIL',
+                '6. Record your 5-8 min video',
+                '7. Commit VALIDATION.md + add YouTube link here',
+                '8. Mark this PR as **Ready for review**',
+              ].join('\n'),
+              head: branch,
+              base: 'main',
+              draft: true
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: [
+                `Your tutorial project is ready!`,
+                '',
+                `**PR:** #${pr.number}`,
+                `**Branch:** \`${branch}\``,
+                `**Files:** ${fileCount}`,
+                '',
+                'Steps:',
+                `1. \`git fetch origin && git checkout ${branch}\``,
+                `2. \`cd tutorials/${slug}\``,
+                '3. Install deps and run the project',
+                '4. Test every feature listed above',
+                '5. Fill in VALIDATION.md with PASS/FAIL for each item',
+                '6. Record your video (5-8 min)',
+                '7. Push your changes and add the YouTube link to the PR',
+                '8. Mark the PR as ready for review',
+              ].join('\n')
+            });
+
+            console.log(`Created draft PR #${pr.number} for tutorial ${slug}`);
+
+      - name: Comment on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.inputs.outputs.issue_number }}');
+            if (!issueNumber) return;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: [
+                'Tutorial generation failed.',
+                '',
+                '@haycarlitos — check the [workflow run](' +
+                  `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` +
+                ') for details.'
+              ].join('\n')
+            });

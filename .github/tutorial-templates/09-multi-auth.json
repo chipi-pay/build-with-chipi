@@ -1,8 +1,27 @@
 {
   "title": "Tutorial 09: Multi-Auth Swap (React + Custom JWKS)",
-  "labels": ["tutorial", "react", "week-3"],
+  "labels": [
+    "tutorial",
+    "react",
+    "week-3"
+  ],
   "assignee": "YrandaNova",
   "unlock_phrase": "auth-agnostic",
   "next_template": "10-wallet-upgrade.json",
+  "min_sdk_version": "14.1.0",
+  "packages": [
+    "@chipi-stack/chipi-react"
+  ],
+  "hooks_to_exercise": [
+    "useCreateWallet",
+    "ChipiBrowserSDK"
+  ],
+  "docs_pages": [
+    "https://docs.chipipay.com/sdk/react/gasless-quickstart",
+    "https://docs.chipipay.com/sdk/react/gasless-firebase-setup",
+    "https://docs.chipipay.com/sdk/react/gasless-supabase-setup",
+    "https://docs.chipipay.com/sdk/react/gasless-custom-auth-setup",
+    "https://docs.chipipay.com/sdk/api/introduction"
+  ],
   "body": "**May** — This is the enterprise play. Big companies don't use Clerk — they have their own auth (Okta, Auth0, custom SSO). This tutorial proves that Chipi works with ANY auth provider via JWKS. You'll set up the same app with three different auth backends. If this works, we can pitch Chipi to enterprises without them worrying about auth lock-in. That's the difference between \"cool startup SDK\" and \"enterprise-ready platform.\"\n\n## Framework: React (Vite)\n## Auth Provider: Custom (Firebase → Supabase → raw JWKS)\n\n## Docs pages to follow (in order)\n\n1. https://docs.chipipay.com/sdk/react/gasless-quickstart\n2. https://docs.chipipay.com/sdk/react/gasless-firebase-setup\n3. https://docs.chipipay.com/sdk/react/gasless-supabase-setup\n4. https://docs.chipipay.com/sdk/react/gasless-custom-auth-setup\n5. https://docs.chipipay.com/sdk/api/introduction\n\n## Features to test\n\n- [ ] App works with Firebase auth\n- [ ] Same app works after switching to Supabase auth\n- [ ] Same app works with custom JWKS endpoint\n- [ ] JWKS configuration via dashboard API\n- [ ] Bearer token validation works for all three providers\n- [ ] Wallet creation works with each auth provider\n\n## What to exercise\n\n- JWKS configuration (dashboard API)\n- BearerTokenGuard with different JWT issuers\n- ChipiBrowserSDK with bearerToken\n- Auth provider swap without changing Chipi code\n\n## Deliverables\n\n- [ ] Working project in `tutorials/09-multi-auth/`\n- [ ] Clean clone works\n- [ ] `VALIDATION.md` with pass/fail for EACH auth provider\n- [ ] Recording: 5-8 min showing the auth swap. Being auth-agnostic is what makes Chipi enterprise-ready — comment **auth-agnostic** to unlock your next tutorial\n- [ ] All bugs filed\n- [ ] YouTube video link in PR description\n\n## Use case ideas (mention in your recording)\n\n- White-label wallet platform (each client brings their auth)\n- Enterprise app with SSO integration\n- Multi-tenant SaaS where each org has different auth\n\n## Your impact\n\nEnterprise readiness. Any auth = any customer. 5/5 auth providers validated."
 }

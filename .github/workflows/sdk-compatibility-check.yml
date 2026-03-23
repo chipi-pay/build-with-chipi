@@ -1,0 +1,198 @@
+name: SDK Compatibility Check
+
+on:
+  schedule:
+    - cron: '0 10 * * 1' # Monday 10am UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-tutorials:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check merged tutorial compatibility
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { execFileSync } = require('child_process');
+
+            const tutorialsDir = path.resolve('tutorials');
+            if (!fs.existsSync(tutorialsDir)) {
+              console.log('No tutorials directory yet');
+              return;
+            }
+
+            const dirs = fs.readdirSync(tutorialsDir, { withFileTypes: true })
+              .filter(d => d.isDirectory());
+
+            if (dirs.length === 0) {
+              console.log('No tutorials found');
+              return;
+            }
+
+            const results = [];
+
+            for (const dir of dirs) {
+              const tutorialPath = path.join(tutorialsDir, dir.name);
+              const pkgPath = path.join(tutorialPath, 'package.json');
+              const valPath = path.join(tutorialPath, 'VALIDATION.md');
+              const reqPath = path.join(tutorialPath, 'requirements.txt');
+              const result = { name: dir.name, drift: [], install: null, build: null, hooks: [] };
+
+              // --- Version drift ---
+              if (fs.existsSync(pkgPath)) {
+                const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+                const chipiDeps = Object.entries(allDeps)
+                  .filter(([k]) => k.startsWith('@chipi-stack/'));
+
+                for (const [name, version] of chipiDeps) {
+                  if (!/^@chipi-stack\/[\w-]+$/.test(name)) continue; // validate package name
+                  try {
+                    const latest = execFileSync('npm', ['view', name, 'version'], { timeout: 15000 })
+                      .toString().trim();
+                    const current = version.replace(/[\^~>=<]/g, '');
+                    result.drift.push({ pkg: name, current, latest, stale: current !== latest });
+                  } catch {}
+                }
+
+                // --- Install test ---
+                try {
+                  execFileSync('npm', ['install', '--ignore-scripts'], { cwd: tutorialPath, timeout: 120000, stdio: 'pipe' });
+                  result.install = 'pass';
+                } catch (e) {
+                  const output = e.stdout?.toString() || e.stderr?.toString() || '';
+                  result.install = output.slice(-500) || 'failed';
+                }
+
+                // --- Build test ---
+                if (result.install === 'pass' && pkg.scripts?.build) {
+                  try {
+                    execFileSync('npm', ['run', 'build'], { cwd: tutorialPath, timeout: 120000, stdio: 'pipe' });
+                    result.build = 'pass';
+                  } catch (e) {
+                    const output = e.stdout?.toString() || e.stderr?.toString() || '';
+                    result.build = output.slice(-500) || 'failed';
+                  }
+                }
+
+                // --- Hook existence in installed packages ---
+                if (result.install === 'pass' && fs.existsSync(valPath)) {
+                  const valContent = fs.readFileSync(valPath, 'utf-8');
+                  const hookMatches = valContent.match(/\|\s*(\w+)\s*\|.*\|\s*(YES|NO)\s*\|/gi) || [];
+                  const hooks = [...new Set(hookMatches.map(m => m.split('|').map(s => s.trim()).filter(Boolean)[0]))];
+
+                  for (const hook of hooks) {
+                    if (!/^\w+$/.test(hook)) continue; // validate hook name
+                    try {
+                      const found = execFileSync('grep', ['-rl', hook, 'node_modules/@chipi-stack/'],
+                        { cwd: tutorialPath, timeout: 10000, stdio: 'pipe' }
+                      ).toString().trim();
+                      result.hooks.push({ name: hook, found: !!found });
+                    } catch {
+                      result.hooks.push({ name: hook, found: false });
+                    }
+                  }
+                }
+              } else if (fs.existsSync(reqPath)) {
+                // Python tutorial — check pip installability
+                try {
+                  execSync(`pip install --dry-run -r "${reqPath}" 2>&1`, { cwd: tutorialPath, timeout: 60000 });
+                  result.install = 'pass';
+                } catch (e) {
+                  result.install = e.stderr?.toString().slice(0, 300) || 'failed';
+                }
+              }
+
+              // --- SDK version from VALIDATION.md ---
+              if (fs.existsSync(valPath)) {
+                const val = fs.readFileSync(valPath, 'utf-8');
+                result.sdkVersion = val.match(/\*{0,2}SDK Version:?\*{0,2}\s*(.+)/i)?.[1]?.trim().replace(/<!--.*-->/, '').trim() || 'unknown';
+              }
+
+              results.push(result);
+            }
+
+            // --- Build report ---
+            let body = `## SDK Compatibility Report\n\n`;
+            body += `_Checked ${new Date().toISOString().split('T')[0]}_\n\n`;
+
+            let hasFailures = false;
+
+            for (const r of results) {
+              const staleDeps = r.drift.filter(d => d.stale);
+              const missingHooks = r.hooks.filter(h => !h.found);
+              const installOk = r.install === 'pass';
+              const buildOk = r.build === 'pass' || r.build === null;
+
+              const failed = !installOk || !buildOk || missingHooks.length > 0;
+              const warn = staleDeps.length > 0;
+              const icon = failed ? '\u{1F534}' : warn ? '\u{1F7E1}' : '\u{1F7E2}';
+
+              if (failed) hasFailures = true;
+
+              body += `### ${icon} \`${r.name}\`\n`;
+              if (r.sdkVersion) body += `Validated at SDK ${r.sdkVersion}\n\n`;
+
+              // Version drift table
+              if (r.drift.length > 0) {
+                body += `| Package | Current | Latest | Status |\n|---|---|---|---|\n`;
+                for (const d of r.drift) {
+                  body += `| ${d.pkg} | ${d.current} | ${d.latest} | ${d.stale ? '\u26A0\uFE0F drift' : '\u2705'} |\n`;
+                }
+                body += '\n';
+              }
+
+              // Install/build
+              if (r.install && r.install !== 'pass') body += `\u274C **Install failed:** ${r.install}\n`;
+              if (r.build && r.build !== 'pass') body += `\u274C **Build failed:** ${r.build}\n`;
+              if (installOk) body += `\u2705 Install OK\n`;
+              if (r.build === 'pass') body += `\u2705 Build OK\n`;
+
+              // Hooks
+              if (missingHooks.length > 0) {
+                body += `\u274C **Missing hooks:** ${missingHooks.map(h => h.name).join(', ')}\n`;
+              }
+              body += '\n';
+            }
+
+            // --- Create or update tracking issue ---
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'compatibility-report',
+              state: 'open',
+              per_page: 1
+            });
+
+            if (existing.length > 0) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                body
+              });
+              console.log(`Updated issue #${existing[0].number}`);
+            } else if (hasFailures || results.some(r => r.drift.some(d => d.stale))) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'SDK Compatibility Report',
+                body,
+                labels: ['compatibility-report']
+              });
+              console.log('Created compatibility report issue');
+            } else {
+              console.log('All tutorials compatible — no issue needed');
+            }

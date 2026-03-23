@@ -3,6 +3,8 @@ name: Tutorial Completeness Check
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'tutorials/**'
 
 permissions:
   pull-requests: write

@@ -4,7 +4,7 @@ on:
     types: [created]
 permissions:
   issues: write
-  contents: read
+  contents: write
 jobs:
   check-unlock:
     runs-on: ubuntu-latest
@@ -32,7 +32,9 @@ jobs:
                 }
                 const nextTemplate = JSON.parse(fs.readFileSync(path.join(templatesDir, nextTemplateFile), 'utf-8'));
                 const newIssue = await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: nextTemplate.title, body: nextTemplate.body, labels: nextTemplate.labels, assignees: [nextTemplate.assignee] });
-                await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber, body: '✅ @haycarlitos — @' + commenter + ' unlocked the next tutorial!\n\n➡️ Next: ' + newIssue.data.title + ' (#' + newIssue.data.number + ')' });
+                // Dispatch tutorial generation workflow
+                await github.rest.repos.createDispatchEvent({ owner: context.repo.owner, repo: context.repo.repo, event_type: 'generate-tutorial', client_payload: { template_file: nextTemplateFile, issue_number: newIssue.data.number } });
+                await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber, body: '✅ @haycarlitos — @' + commenter + ' unlocked the next tutorial!\n\n➡️ Next: ' + newIssue.data.title + ' (#' + newIssue.data.number + ')\n\n⏳ Generating tutorial project — a draft PR will appear shortly.' });
                 return;
               }
             }
