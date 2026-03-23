@@ -1,0 +1,94 @@
+{
+  "_description": "SDK validation coverage matrix. Updated by tutorial validation reports.",
+  "_last_updated": "2026-03-23",
+  "summary": {
+    "total_docs_pages": 132,
+    "validated_pages": 0,
+    "total_hooks": 26,
+    "validated_hooks": 0,
+    "framework_auth_combos_tested": 0,
+    "framework_auth_combos_total": 14,
+    "bugs_found": 0
+  },
+  "frameworks": {
+    "nextjs": {
+      "auth_providers": {
+        "clerk": { "validated": false, "tutorial": null },
+        "firebase": { "validated": false, "tutorial": null },
+        "supabase": { "validated": false, "tutorial": null },
+        "better-auth": { "validated": false, "tutorial": null },
+        "custom": { "validated": false, "tutorial": null }
+      }
+    },
+    "react": {
+      "auth_providers": {
+        "clerk": { "validated": false, "tutorial": null },
+        "firebase": { "validated": false, "tutorial": null },
+        "supabase": { "validated": false, "tutorial": null },
+        "better-auth": { "validated": false, "tutorial": null },
+        "custom": { "validated": false, "tutorial": null }
+      }
+    },
+    "expo": {
+      "auth_providers": {
+        "clerk": { "validated": false, "tutorial": null },
+        "firebase": { "validated": false, "tutorial": null },
+        "custom": { "validated": false, "tutorial": null }
+      }
+    },
+    "python": {
+      "validated": false,
+      "tutorial": null
+    }
+  },
+  "hooks": {
+    "useCreateWallet": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetWallet": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useChipiWallet": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetTokenBalance": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useTransfer": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useApprove": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useRecordSendTransaction": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useCallAnyContract": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetTransactionList": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetTransaction": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetTransactionStatus": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useCreateSessionKey": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useAddSessionKeyToContract": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useExecuteWithSession": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useRevokeSessionKey": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetSessionData": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useChipiSession": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useMigrateWalletToPasskey": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useUpdateWalletEncryption": { "validated": false, "tutorials": [], "frameworks": [] },
+    "usePurchaseSku": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetSkuList": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetSku": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useGetSkuPurchase": { "validated": false, "tutorials": [], "frameworks": [] },
+    "useX402Payment": { "validated": false, "tutorials": [], "frameworks": [] },
+    "createWalletPasskey": { "validated": false, "tutorials": [], "frameworks": [] },
+    "createChipiServer": { "validated": false, "tutorials": [], "frameworks": [] }
+  },
+  "python_methods": {
+    "create_wallet": { "validated": false, "tutorial": null },
+    "get_wallet": { "validated": false, "tutorial": null },
+    "transfer": { "validated": false, "tutorial": null },
+    "get_token_balance": { "validated": false, "tutorial": null },
+    "get_transaction": { "validated": false, "tutorial": null },
+    "get_transaction_status": { "validated": false, "tutorial": null },
+    "x402_middleware": { "validated": false, "tutorial": null },
+    "x402_client": { "validated": false, "tutorial": null }
+  },
+  "guides": {
+    "passkeys": { "validated": false, "tutorial": null },
+    "session-keys": { "validated": false, "tutorial": null },
+    "wallet-upgrades": { "validated": false, "tutorial": null },
+    "x402-introduction": { "validated": false, "tutorial": null },
+    "x402-client": { "validated": false, "tutorial": null },
+    "x402-server": { "validated": false, "tutorial": null },
+    "x402-sessions": { "validated": false, "tutorial": null },
+    "custom-wallet-types": { "validated": false, "tutorial": null },
+    "error-handling": { "validated": false, "tutorial": null },
+    "on-chain-verification": { "validated": false, "tutorial": null }
+  }
+}
