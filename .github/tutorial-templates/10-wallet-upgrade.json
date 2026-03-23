@@ -1,8 +1,28 @@
 {
   "title": "Tutorial 10: Wallet Upgrade — READY to CHIPI (Next.js + Clerk)",
-  "labels": ["tutorial", "nextjs", "week-4"],
+  "labels": [
+    "tutorial",
+    "nextjs",
+    "week-4"
+  ],
   "assignee": "YrandaNova",
   "unlock_phrase": "upgrade-master",
   "next_template": "11-expo-firebase.json",
+  "min_sdk_version": "14.1.0",
+  "packages": [
+    "@chipi-stack/nextjs",
+    "@chipi-stack/backend"
+  ],
+  "hooks_to_exercise": [
+    "useUpdateWalletEncryption",
+    "useGetWallet"
+  ],
+  "docs_pages": [
+    "https://docs.chipipay.com/sdk/guides/wallet-upgrades",
+    "https://docs.chipipay.com/sdk/guides/custom-wallet-types",
+    "https://docs.chipipay.com/sdk/nextjs/hooks/use-update-wallet-encryption",
+    "https://docs.chipipay.com/sdk/backend/methods/prepare-wallet-upgrade",
+    "https://docs.chipipay.com/sdk/backend/methods/execute-wallet-upgrade"
+  ],
   "body": "**May** — Starknet already has millions of Argent X wallets. Those users have READY-type wallets. Chipi uses a different, more powerful wallet type (SNIP-9 with session keys). This tutorial proves we can upgrade existing wallets to Chipi — without losing funds, without creating a new address. If this works, every Argent X user is a potential Chipi user. That's the difference between starting from zero and starting from millions.\n\n## Framework: Next.js (App Router)\n## Auth Provider: Clerk\n\n## Docs pages to follow (in order)\n\n1. https://docs.chipipay.com/sdk/guides/wallet-upgrades\n2. https://docs.chipipay.com/sdk/guides/custom-wallet-types\n3. https://docs.chipipay.com/sdk/nextjs/hooks/use-update-wallet-encryption\n4. https://docs.chipipay.com/sdk/backend/methods/prepare-wallet-upgrade\n5. https://docs.chipipay.com/sdk/backend/methods/execute-wallet-upgrade\n\n## Features to test\n\n- [ ] Detect wallet type (READY vs CHIPI)\n- [ ] Prepare wallet upgrade (get typed data)\n- [ ] Execute wallet upgrade (sign + submit)\n- [ ] Verify wallet type changed after upgrade\n- [ ] Verify funds preserved after upgrade\n- [ ] Update wallet encryption after upgrade\n- [ ] Session keys work on upgraded wallet\n\n## Hooks to exercise\n\n- `useUpdateWalletEncryption`\n- `useGetWallet` (check wallet type)\n- `prepareWalletUpgrade` (backend method)\n- `executeWalletUpgrade` (backend method)\n\n## Deliverables\n\n- [ ] Working project in `tutorials/10-wallet-upgrade/`\n- [ ] Clean clone works\n- [ ] `VALIDATION.md` with pass/fail\n- [ ] Every hook/method above used in code\n- [ ] Recording: 5-8 min. You've mastered the upgrade flow — comment **upgrade-master** to unlock your final tutorial\n- [ ] All bugs filed\n- [ ] YouTube video link in PR description\n\n## Use case ideas (mention in your recording)\n\n- Migration tool for Argent X users joining Chipi\n- Multi-wallet management app\n- Account recovery flow\n\n## Your impact\n\nUnlocks the existing Starknet user base. Migration path = growth."
 }

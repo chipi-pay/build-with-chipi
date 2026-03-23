@@ -55,6 +55,9 @@ jobs:
             totalPass += passes;
             totalFail += fails;
 
+            // Extract SDK version from VALIDATION.md header
+            const sdkVersion = content.match(/SDK Version:\s*(.+)/i)?.[1]?.trim() || null;
+
             // Extract framework and auth from header
             const framework = content.match(/Framework:\s*(.+)/i)?.[1]?.trim()?.toLowerCase();
             const auth = content.match(/Auth Provider:\s*(.+)/i)?.[1]?.trim()?.toLowerCase();
@@ -63,10 +66,12 @@ jobs:
             if (framework && auth && coverage.frameworks[framework]?.auth_providers?.[auth]) {
               coverage.frameworks[framework].auth_providers[auth].validated = passes > 0;
               coverage.frameworks[framework].auth_providers[auth].tutorial = tutorial;
+              coverage.frameworks[framework].auth_providers[auth].sdk_version = sdkVersion;
               combos++;
             } else if (framework === 'python' && coverage.frameworks.python) {
               coverage.frameworks.python.validated = passes > 0;
               coverage.frameworks.python.tutorial = tutorial;
+              coverage.frameworks.python.sdk_version = sdkVersion;
               combos++;
             }
 
@@ -80,6 +85,7 @@ jobs:
                 if (coverage.hooks[hookName]) {
                   if (works) {
                     coverage.hooks[hookName].validated = true;
+                    coverage.hooks[hookName].sdk_version = sdkVersion;
                     if (!coverage.hooks[hookName].tutorials.includes(tutorial)) {
                       coverage.hooks[hookName].tutorials.push(tutorial);
                     }

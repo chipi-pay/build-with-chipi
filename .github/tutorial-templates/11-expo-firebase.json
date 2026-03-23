@@ -1,8 +1,35 @@
 {
   "title": "Tutorial 11: Expo + Firebase — Mobile with Google Sign-In",
-  "labels": ["tutorial", "expo", "week-4"],
+  "labels": [
+    "tutorial",
+    "expo",
+    "week-4"
+  ],
   "assignee": "YrandaNova",
   "unlock_phrase": "full-coverage",
   "next_template": null,
+  "min_sdk_version": "14.1.0",
+  "packages": [
+    "@chipi-stack/chipi-expo"
+  ],
+  "hooks_to_exercise": [
+    "useCreateWallet",
+    "useGetWallet",
+    "useGetTokenBalance",
+    "useTransfer",
+    "useGetTransactionList",
+    "createNativeWalletPasskey",
+    "isNativeBiometricSupported"
+  ],
+  "docs_pages": [
+    "https://docs.chipipay.com/sdk/expo/gasless-quickstart",
+    "https://docs.chipipay.com/sdk/expo/gasless-firebase-setup",
+    "https://docs.chipipay.com/sdk/expo/use-biometrics",
+    "https://docs.chipipay.com/sdk/expo/hooks/use-create-wallet",
+    "https://docs.chipipay.com/sdk/expo/hooks/use-get-wallet",
+    "https://docs.chipipay.com/sdk/expo/hooks/use-get-token-balance",
+    "https://docs.chipipay.com/sdk/expo/hooks/use-transfer",
+    "https://docs.chipipay.com/sdk/expo/hooks/use-get-transaction-list"
+  ],
   "body": "**May** — By now you've mastered the SDK. This tutorial validates the Expo + Firebase combination — mobile app with Google Sign-In. It's the most common auth setup for mobile apps worldwide. You'll breeze through this one because you already know both Expo (tutorial 02) and Firebase (tutorial 04). This is about completing the matrix — every framework x auth combo validated. After this, we have 100% coverage. The whole platform is battle-tested because of your work.\n\n## Framework: Expo (React Native)\n## Auth Provider: Firebase\n\n## Docs pages to follow (in order)\n\n1. https://docs.chipipay.com/sdk/expo/gasless-quickstart\n2. https://docs.chipipay.com/sdk/expo/gasless-firebase-setup\n3. https://docs.chipipay.com/sdk/expo/use-biometrics\n4. https://docs.chipipay.com/sdk/expo/hooks/use-create-wallet\n5. https://docs.chipipay.com/sdk/expo/hooks/use-get-wallet\n6. https://docs.chipipay.com/sdk/expo/hooks/use-get-token-balance\n7. https://docs.chipipay.com/sdk/expo/hooks/use-transfer\n8. https://docs.chipipay.com/sdk/expo/hooks/use-get-transaction-list\n\n## Features to test\n\n- [ ] Firebase auth works on mobile (Google Sign-In)\n- [ ] Create wallet with biometrics\n- [ ] View balance\n- [ ] Send USDC\n- [ ] Transaction history\n- [ ] Everything works on physical device or simulator\n\n## Hooks to exercise\n\n- `useCreateWallet` (Expo override)\n- `useGetWallet`\n- `useGetTokenBalance`\n- `useTransfer`\n- `useGetTransactionList`\n- `createNativeWalletPasskey`\n- `isNativeBiometricSupported`\n\n## Deliverables\n\n- [ ] Working project in `tutorials/11-expo-firebase/`\n- [ ] Clean clone works\n- [ ] `VALIDATION.md` with pass/fail\n- [ ] Every hook above used in code\n- [ ] Recording: 5-8 min on device/simulator\n- [ ] All bugs filed\n- [ ] YouTube video link in PR description\n\nWhen you're done, comment **full-coverage** on this issue. That means 100% coverage — 26/26 hooks, 5/5 auth providers, 4/4 frameworks. All validated by you.\n\n## Use case ideas (mention in your recording)\n\n- Mobile banking app with Google Sign-In\n- Crypto onboarding app for non-crypto users\n- Social payment app (Venmo-style, crypto underneath)\n\n## Your impact\n\n100% coverage achieved. The platform is fully validated. Every framework, every auth provider, every hook — battle-tested because of your work across 9 tutorials. You built the foundation of Chipi's developer ecosystem."
 }

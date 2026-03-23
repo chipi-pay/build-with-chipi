@@ -1,8 +1,33 @@
 {
   "title": "Tutorial 03: Python — Server Wallet + Transfers",
-  "labels": ["tutorial", "python", "week-1"],
+  "labels": [
+    "tutorial",
+    "python",
+    "week-1"
+  ],
   "assignee": "YrandaNova",
   "unlock_phrase": "python-gasless",
   "next_template": "04-session-keys.json",
+  "min_sdk_version": "14.1.0",
+  "packages": [
+    "chipi-python"
+  ],
+  "hooks_to_exercise": [
+    "create_wallet",
+    "get_wallet",
+    "transfer",
+    "get_token_balance",
+    "get_transaction",
+    "get_transaction_status"
+  ],
+  "docs_pages": [
+    "https://docs.chipipay.com/sdk/python/quickstart",
+    "https://docs.chipipay.com/sdk/python/methods/create-wallet",
+    "https://docs.chipipay.com/sdk/python/methods/get-wallet",
+    "https://docs.chipipay.com/sdk/python/methods/transfer",
+    "https://docs.chipipay.com/sdk/python/methods/get-token-balance",
+    "https://docs.chipipay.com/sdk/python/methods/get-transaction",
+    "https://docs.chipipay.com/sdk/python/methods/get-transaction-status"
+  ],
   "body": "**May** — This is the AI play. Every AI agent builder works in Python. When they need their agent to create wallets and send payments, they'll use `chipi-python`. Imagine: a developer builds an AI agent that creates wallets for users and sends USDC transfers, all gaslessly on Starknet. If this works, Vela (our first paying client) and every future AI protocol can integrate in minutes.\n\n## Framework: Python (FastAPI)\n## Auth Provider: N/A (server-side, API keys)\n\n## Docs pages to follow (in order)\n\n1. https://docs.chipipay.com/sdk/python/quickstart\n2. https://docs.chipipay.com/sdk/python/methods/create-wallet\n3. https://docs.chipipay.com/sdk/python/methods/get-wallet\n4. https://docs.chipipay.com/sdk/python/methods/transfer\n5. https://docs.chipipay.com/sdk/python/methods/get-token-balance\n6. https://docs.chipipay.com/sdk/python/methods/get-transaction\n7. https://docs.chipipay.com/sdk/python/methods/get-transaction-status\n\n## Features to test\n\n- [ ] `pip install chipi-python` works\n- [ ] SDK initializes with API keys\n- [ ] Create a wallet programmatically\n- [ ] Get wallet by user ID\n- [ ] Check USDC balance\n- [ ] Transfer USDC between wallets\n- [ ] Get transaction by hash\n- [ ] Check transaction status\n- [ ] Async variants work (`acreate_wallet`, etc.)\n\n## Methods to exercise\n\n- `sdk.wallets.create_wallet()`\n- `sdk.wallets.get_wallet()`\n- `sdk.wallets.get_token_balance()`\n- `sdk.transactions.transfer()`\n- `sdk.transactions.get_transaction()`\n- `sdk.transactions.get_transaction_status()`\n\n## When something doesn't work\n\nFile bugs in `chipi-pay/sdks` (Python SDK lives in `sdks/python/`). Include the exact docs URL and error.\n\n## Deliverables\n\n- [ ] Working project in `tutorials/03-python-wallet/`\n- [ ] Clean clone works: `git clone → pip install -r requirements.txt → python main.py`\n- [ ] `VALIDATION.md` with pass/fail per docs page + feature\n- [ ] Every method above used in source code. When done, comment **python-gasless** in this issue to unlock your next tutorial\n- [ ] Recording: 5-8 min showing terminal + API calls (use curl or httpie)\n- [ ] All bugs filed as issues\n- [ ] YouTube video link in PR description\n\n**Note:** Python 3.13 has known `starknet-py` dependency issues. Use Python 3.11 or 3.12.\n\n## Use case ideas (mention in your recording)\n\n- AI agent that manages wallets and sends payments\n- Automated trading bot with gasless execution\n- Backend service that onboards users with wallets on signup\n\n## Your impact\n\nThis becomes the Python template in the CLI. AI agent builders worldwide will scaffold from your validated code."
 }

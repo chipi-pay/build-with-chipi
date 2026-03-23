@@ -1,0 +1,249 @@
+name: Backlog Health Check
+
+on:
+  schedule:
+    - cron: '0 11 * * 1' # Monday 11am UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install latest SDK packages for export checking
+        run: |
+          mkdir -p /tmp/sdk-check && cd /tmp/sdk-check
+          npm init -y > /dev/null 2>&1
+          npm install @chipi-stack/chipi-react@latest \
+                      @chipi-stack/nextjs@latest \
+                      @chipi-stack/chipi-expo@latest \
+                      @chipi-stack/backend@latest \
+                      @chipi-stack/core@latest \
+                      @chipi-stack/chipi-passkey@latest \
+                      @chipi-stack/x402@latest \
+                      --ignore-scripts 2>&1 || true
+          echo "SDK_CHECK_DIR=/tmp/sdk-check" >> $GITHUB_ENV
+
+      - name: Check template health
+        uses: actions/github-script@v7
+        env:
+          SDK_CHECK_DIR: ${{ env.SDK_CHECK_DIR }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { execSync } = require('child_process');
+            const https = require('https');
+            const http = require('http');
+
+            const sdkDir = process.env.SDK_CHECK_DIR;
+            const templatesDir = path.resolve('.github/tutorial-templates');
+            const templateFiles = fs.readdirSync(templatesDir)
+              .filter(f => f.endsWith('.json') && f !== '00-context.json');
+
+            // --- Helper: check if an export exists in installed packages ---
+            function hookExists(name) {
+              try {
+                const result = execSync(
+                  `grep -rl "${name}" node_modules/@chipi-stack/*/dist/ 2>/dev/null | head -1`,
+                  { cwd: sdkDir, timeout: 10000 }
+                ).toString().trim();
+                return !!result;
+              } catch {
+                return false;
+              }
+            }
+
+            // --- Helper: HTTP HEAD with redirect follow ---
+            function checkUrl(url) {
+              return new Promise((resolve) => {
+                const mod = url.startsWith('https') ? https : http;
+                const req = mod.request(url, { method: 'HEAD', timeout: 10000 }, (res) => {
+                  if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    resolve({ status: res.statusCode, redirect: res.headers.location });
+                  } else {
+                    resolve({ status: res.statusCode });
+                  }
+                });
+                req.on('error', () => resolve({ status: 0 }));
+                req.on('timeout', () => { req.destroy(); resolve({ status: 0 }); });
+                req.end();
+              });
+            }
+
+            // --- Helper: check npm installability ---
+            function packageInstallable(pkg) {
+              try {
+                execSync(`npm view ${pkg}@latest version 2>/dev/null`, { timeout: 10000 });
+                return true;
+              } catch {
+                return false;
+              }
+            }
+
+            // --- Get installed SDK version ---
+            let installedVersion = 'unknown';
+            try {
+              const corePkg = JSON.parse(
+                fs.readFileSync(path.join(sdkDir, 'node_modules/@chipi-stack/chipi-react/package.json'), 'utf-8')
+              );
+              installedVersion = corePkg.version;
+            } catch {}
+
+            const results = [];
+
+            for (const file of templateFiles) {
+              const template = JSON.parse(fs.readFileSync(path.join(templatesDir, file), 'utf-8'));
+              const result = {
+                file,
+                title: template.title,
+                hooks: [],
+                docs: [],
+                packages: [],
+                minVersion: template.min_sdk_version || null
+              };
+
+              // --- Check hooks exist in latest packages ---
+              const hooks = template.hooks_to_exercise || [];
+              for (const hook of hooks) {
+                result.hooks.push({ name: hook, exists: hookExists(hook) });
+              }
+
+              // --- Check docs pages return 200 ---
+              const pages = template.docs_pages || [];
+              for (const url of pages) {
+                const { status } = await checkUrl(url);
+                result.docs.push({ url, status, ok: status >= 200 && status < 400 });
+              }
+
+              // --- Check packages installable ---
+              const packages = template.packages || [];
+              for (const pkg of packages) {
+                result.packages.push({ name: pkg, installable: packageInstallable(pkg) });
+              }
+
+              results.push(result);
+            }
+
+            // --- Build report body ---
+            let body = `## Backlog Health Check\n\n`;
+            body += `_Checked ${new Date().toISOString().split('T')[0]} against SDK ${installedVersion}_\n\n`;
+
+            const staleTemplates = [];
+
+            for (const r of results) {
+              const missingHooks = r.hooks.filter(h => !h.exists);
+              const brokenDocs = r.docs.filter(d => !d.ok);
+              const brokenPkgs = r.packages.filter(p => !p.installable);
+              const hasIssue = missingHooks.length > 0 || brokenDocs.length > 0 || brokenPkgs.length > 0;
+
+              if (hasIssue) staleTemplates.push(r);
+
+              const icon = hasIssue ? '\u{1F534}' : '\u{1F7E2}';
+              body += `### ${icon} ${r.file}\n`;
+              body += `**${r.title}**\n\n`;
+
+              if (missingHooks.length > 0) {
+                body += `\u274C **Missing hooks/exports:** ${missingHooks.map(h => \`\\\`${h.name}\\\`\`).join(', ')}\n`;
+              }
+              if (brokenDocs.length > 0) {
+                body += `\u274C **Broken docs pages:**\n`;
+                for (const d of brokenDocs) {
+                  body += `  - ${d.url} (HTTP ${d.status})\n`;
+                }
+              }
+              if (brokenPkgs.length > 0) {
+                body += `\u274C **Uninstallable packages:** ${brokenPkgs.map(p => p.name).join(', ')}\n`;
+              }
+              if (!hasIssue) {
+                body += `\u2705 ${r.hooks.length} hooks, ${r.docs.length} docs pages, ${r.packages.length} packages — all healthy\n`;
+              }
+              body += '\n';
+            }
+
+            // --- Summary ---
+            body += `---\n**${staleTemplates.length}/${results.length}** templates need attention.\n`;
+
+            // --- Label open tutorial issues that match stale templates ---
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'tutorial',
+              state: 'open',
+              per_page: 50
+            });
+
+            for (const issue of openIssues) {
+              // Match issue title to template title
+              const matchingStale = staleTemplates.find(t => issue.title.includes(t.title.split(':')[0]));
+              const hasLabel = issue.labels.some(l => l.name === 'needs-update');
+
+              if (matchingStale && !hasLabel) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: ['needs-update']
+                });
+                const missingHooks = matchingStale.hooks.filter(h => !h.exists);
+                const brokenDocs = matchingStale.docs.filter(d => !d.ok);
+                let comment = `\u26A0\uFE0F **Backlog health check found issues with this tutorial's template:**\n\n`;
+                if (missingHooks.length > 0) comment += `- Missing hooks: ${missingHooks.map(h => h.name).join(', ')}\n`;
+                if (brokenDocs.length > 0) comment += `- Broken docs: ${brokenDocs.map(d => d.url).join(', ')}\n`;
+                comment += `\n@haycarlitos — template needs updating before May starts this tutorial.`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: comment
+                });
+              } else if (!matchingStale && hasLabel) {
+                // Remove stale label if template is now healthy
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    name: 'needs-update'
+                  });
+                } catch {}
+              }
+            }
+
+            // --- Create or update tracking issue ---
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'backlog-health',
+              state: 'open',
+              per_page: 1
+            });
+
+            if (existing.length > 0) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                body
+              });
+            } else if (staleTemplates.length > 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Backlog Health Check',
+                body,
+                labels: ['backlog-health']
+              });
+            }
+
+            console.log(`${staleTemplates.length}/${results.length} templates need attention`);
