@@ -20,8 +20,6 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,8 +40,12 @@ jobs:
               templateFile = context.payload.inputs.template_file;
               issueNumber = context.payload.inputs.issue_number;
             }
+            if (!templateFile || !issueNumber) {
+              core.setFailed('Missing required inputs: template_file and issue_number');
+              return;
+            }
             core.setOutput('template_file', templateFile);
-            core.setOutput('issue_number', issueNumber);
+            core.setOutput('issue_number', String(issueNumber));
             core.setOutput('slug', templateFile.replace('.json', ''));
             console.log(`Template: ${templateFile}, Issue: #${issueNumber}`);
 
@@ -78,7 +80,9 @@ jobs:
                   docsContent.push({ url, content });
                   fetched = true;
                   console.log(`Fetched: ${docPath + ext}`);
-                } catch {}
+                } catch (e) {
+                  console.log(`Could not fetch ${docPath + ext}: ${e.message}`);
+                }
               }
 
               if (!fetched) {
@@ -97,7 +101,9 @@ jobs:
                     fetched = true;
                     console.log(`Fetched HTML: ${url}`);
                   }
-                } catch {}
+                } catch (e) {
+                  console.log(`Could not fetch HTML ${url}: ${e.message}`);
+                }
               }
 
               if (!fetched) {
@@ -179,7 +185,8 @@ File paths are relative to the project root (e.g., package.json, not tutorials/s
                 model: 'claude-sonnet-4-5-20241022',
                 max_tokens: 16384,
                 messages: [{ role: 'user', content: prompt }]
-              })
+              }),
+              signal: AbortSignal.timeout(300000) // 5 min timeout
             });
 
             if (!apiResponse.ok) {
@@ -209,15 +216,21 @@ File paths are relative to the project root (e.g., package.json, not tutorials/s
               return;
             }
 
-            // --- Write project files ---
-            const tutorialDir = path.join('tutorials', slug);
+            // --- Write project files (with path traversal protection) ---
+            const tutorialDir = path.resolve('tutorials', slug);
             fs.mkdirSync(tutorialDir, { recursive: true });
 
             for (const file of files) {
-              const filePath = path.join(tutorialDir, file.path);
+              // Sanitize: reject paths with .., absolute paths, or escaping the tutorial dir
+              const sanitized = file.path.replace(/\.\./g, '').replace(/^\//, '');
+              const filePath = path.resolve(tutorialDir, sanitized);
+              if (!filePath.startsWith(tutorialDir)) {
+                console.log(`SKIP (path escape): ${file.path}`);
+                continue;
+              }
               fs.mkdirSync(path.dirname(filePath), { recursive: true });
               fs.writeFileSync(filePath, file.content);
-              console.log(`Wrote: ${file.path}`);
+              console.log(`Wrote: ${sanitized}`);
             }
 
             // --- Generate VALIDATION.md skeleton ---

@@ -25,7 +25,7 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            const { execSync } = require('child_process');
+            const { execFileSync } = require('child_process');
 
             const tutorialsDir = path.resolve('tutorials');
             if (!fs.existsSync(tutorialsDir)) {
@@ -58,8 +58,9 @@ jobs:
                   .filter(([k]) => k.startsWith('@chipi-stack/'));
 
                 for (const [name, version] of chipiDeps) {
+                  if (!/^@chipi-stack\/[\w-]+$/.test(name)) continue; // validate package name
                   try {
-                    const latest = execSync(`npm view ${name} version 2>/dev/null`, { timeout: 15000 })
+                    const latest = execFileSync('npm', ['view', name, 'version'], { timeout: 15000 })
                       .toString().trim();
                     const current = version.replace(/[\^~>=<]/g, '');
                     result.drift.push({ pkg: name, current, latest, stale: current !== latest });
@@ -68,33 +69,35 @@ jobs:
 
                 // --- Install test ---
                 try {
-                  execSync('npm install --ignore-scripts 2>&1', { cwd: tutorialPath, timeout: 120000 });
+                  execFileSync('npm', ['install', '--ignore-scripts'], { cwd: tutorialPath, timeout: 120000, stdio: 'pipe' });
                   result.install = 'pass';
                 } catch (e) {
-                  result.install = e.stderr?.toString().slice(0, 300) || 'failed';
+                  const output = e.stdout?.toString() || e.stderr?.toString() || '';
+                  result.install = output.slice(-500) || 'failed';
                 }
 
                 // --- Build test ---
                 if (result.install === 'pass' && pkg.scripts?.build) {
                   try {
-                    execSync('npm run build 2>&1', { cwd: tutorialPath, timeout: 120000 });
+                    execFileSync('npm', ['run', 'build'], { cwd: tutorialPath, timeout: 120000, stdio: 'pipe' });
                     result.build = 'pass';
                   } catch (e) {
-                    result.build = e.stderr?.toString().slice(0, 300) || 'failed';
+                    const output = e.stdout?.toString() || e.stderr?.toString() || '';
+                    result.build = output.slice(-500) || 'failed';
                   }
                 }
 
                 // --- Hook existence in installed packages ---
                 if (result.install === 'pass' && fs.existsSync(valPath)) {
                   const valContent = fs.readFileSync(valPath, 'utf-8');
-                  const hookMatches = valContent.match(/\|\s*(use\w+|create\w+)\s*\|/gi) || [];
-                  const hooks = [...new Set(hookMatches.map(m => m.replace(/\|/g, '').trim()))];
+                  const hookMatches = valContent.match(/\|\s*(\w+)\s*\|.*\|\s*(YES|NO)\s*\|/gi) || [];
+                  const hooks = [...new Set(hookMatches.map(m => m.split('|').map(s => s.trim()).filter(Boolean)[0]))];
 
                   for (const hook of hooks) {
+                    if (!/^\w+$/.test(hook)) continue; // validate hook name
                     try {
-                      const found = execSync(
-                        `grep -rl "${hook}" node_modules/@chipi-stack/*/dist/ 2>/dev/null | head -1`,
-                        { cwd: tutorialPath }
+                      const found = execFileSync('grep', ['-rl', hook, 'node_modules/@chipi-stack/'],
+                        { cwd: tutorialPath, timeout: 10000, stdio: 'pipe' }
                       ).toString().trim();
                       result.hooks.push({ name: hook, found: !!found });
                     } catch {
@@ -115,7 +118,7 @@ jobs:
               // --- SDK version from VALIDATION.md ---
               if (fs.existsSync(valPath)) {
                 const val = fs.readFileSync(valPath, 'utf-8');
-                result.sdkVersion = val.match(/SDK Version:\s*(.+)/i)?.[1]?.trim() || 'unknown';
+                result.sdkVersion = val.match(/\*{0,2}SDK Version:?\*{0,2}\s*(.+)/i)?.[1]?.trim().replace(/<!--.*-->/, '').trim() || 'unknown';
               }
 
               results.push(result);
@@ -181,7 +184,7 @@ jobs:
                 body
               });
               console.log(`Updated issue #${existing[0].number}`);
-            } else if (hasFailures) {
+            } else if (hasFailures || results.some(r => r.drift.some(d => d.stale))) {
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
