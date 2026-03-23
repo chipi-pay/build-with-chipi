@@ -1,0 +1,117 @@
+name: Update Coverage Report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tutorials/**/VALIDATION.md'
+  workflow_dispatch:
+
+concurrency:
+  group: coverage-update
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  update-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Parse validations and update COVERAGE.json
+        run: |
+          node --input-type=module << 'SCRIPT'
+          import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+          import { join, resolve } from 'node:path';
+
+          const tutorialsDir = resolve('tutorials');
+          if (!existsSync(tutorialsDir)) {
+            console.log('No tutorials directory');
+            process.exit(0);
+          }
+
+          const coverage = JSON.parse(readFileSync('COVERAGE.json', 'utf-8'));
+          let totalPass = 0, totalFail = 0, hooksValidated = new Set(), combos = 0;
+
+          for (const dir of readdirSync(tutorialsDir, { withFileTypes: true })) {
+            if (!dir.isDirectory()) continue;
+            const valPath = join(tutorialsDir, dir.name, 'VALIDATION.md');
+            if (!existsSync(valPath)) continue;
+
+            const content = readFileSync(valPath, 'utf-8');
+            const tutorial = dir.name;
+
+            // Count PASS/FAIL
+            const passes = (content.match(/\|\s*PASS\s*\|/gi) || []).length;
+            const fails = (content.match(/\|\s*FAIL\s*\|/gi) || []).length;
+            totalPass += passes;
+            totalFail += fails;
+
+            // Extract framework and auth from header
+            const framework = content.match(/Framework:\s*(.+)/i)?.[1]?.trim()?.toLowerCase();
+            const auth = content.match(/Auth Provider:\s*(.+)/i)?.[1]?.trim()?.toLowerCase();
+
+            // Update framework/auth combo
+            if (framework && auth && coverage.frameworks[framework]?.auth_providers?.[auth]) {
+              coverage.frameworks[framework].auth_providers[auth].validated = passes > 0;
+              coverage.frameworks[framework].auth_providers[auth].tutorial = tutorial;
+              combos++;
+            } else if (framework === 'python' && coverage.frameworks.python) {
+              coverage.frameworks.python.validated = passes > 0;
+              coverage.frameworks.python.tutorial = tutorial;
+              combos++;
+            }
+
+            // Extract hooks
+            const hookMatches = content.match(/\|\s*(use\w+|create\w+)\s*\|.*\|\s*(YES|NO)\s*\|/gi) || [];
+            for (const match of hookMatches) {
+              const parts = match.split('|').map(s => s.trim()).filter(Boolean);
+              if (parts.length >= 2) {
+                const hookName = parts[0];
+                const works = parts[parts.length - 1].toUpperCase() === 'YES';
+                if (coverage.hooks[hookName]) {
+                  if (works) {
+                    coverage.hooks[hookName].validated = true;
+                    if (!coverage.hooks[hookName].tutorials.includes(tutorial)) {
+                      coverage.hooks[hookName].tutorials.push(tutorial);
+                    }
+                    if (framework && !coverage.hooks[hookName].frameworks.includes(framework)) {
+                      coverage.hooks[hookName].frameworks.push(framework);
+                    }
+                    hooksValidated.add(hookName);
+                  }
+                }
+              }
+            }
+          }
+
+          // Update summary
+          coverage.summary.validated_pages = totalPass;
+          coverage.summary.validated_hooks = hooksValidated.size;
+          coverage.summary.framework_auth_combos_tested = combos;
+          coverage.summary.bugs_found = totalFail;
+          coverage._last_updated = new Date().toISOString().split('T')[0];
+
+          writeFileSync('COVERAGE.json', JSON.stringify(coverage, null, 2) + '\n');
+          console.log(`Coverage: ${totalPass} pass, ${totalFail} fail, ${hooksValidated.size} hooks, ${combos} combos`);
+          SCRIPT
+
+      - name: Commit and push
+        run: |
+          git config user.name "build-with-chipi[bot]"
+          git config user.email "build-with-chipi[bot]@users.noreply.github.com"
+          git add COVERAGE.json
+          if git diff --staged --quiet; then
+            echo "No changes to COVERAGE.json"
+          else
+            git commit -m "chore: update coverage report $(date +%Y-%m-%d)"
+            git push
+          fi
