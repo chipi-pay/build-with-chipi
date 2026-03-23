@@ -124,53 +124,59 @@ jobs:
 
             // --- Build Claude prompt ---
             const docsSection = docsContent.map(d =>
-              `### ${d.url}\n\n${d.content}`
+              '### ' + d.url + '\n\n' + d.content
             ).join('\n\n---\n\n');
 
-            const prompt = `You are generating a complete, buildable tutorial project for the Chipi SDK.
-            Your code will be tested by a QA engineer who validates that the docs are correct.
+            const pkgList = (template.packages || []).join(', ');
+            const hookList = (template.hooks_to_exercise || []).join(', ');
+            const minVer = template.min_sdk_version || '14.1.0';
 
-## Project
-${template.title}
-Framework: ${framework}
-Auth: ${auth}
-
-## Rules
-1. Follow the documentation pages EXACTLY as written. Use the code examples from docs as-is.
-2. Every hook/method listed below MUST appear in your source code and be functional.
-3. The project must work from a clean clone: git clone, install, build, run.
-4. Include .env.example with placeholder values. NEVER include real API keys or secrets.
-5. Keep the code clean and minimal. No extra features beyond what the docs describe.
-6. If a docs page seems wrong or missing info, add a comment: // DOCS-ISSUE: description
-7. Use the EXACT import paths and API patterns shown in the docs.
-8. For Starknet addresses, use mainnet USDC: 0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb
-
-## Packages to install
-${(template.packages || []).join(', ')}
-
-## Hooks/methods that MUST appear in code
-${(template.hooks_to_exercise || []).join(', ')}
-
-## Documentation pages (follow in this order)
-
-${docsSection}
-
-## Output format
-Output each file using this EXACT format (markers must be on their own line):
-
-=== FILE: path/to/file.ext ===
-file content here
-=== END FILE ===
-
-Generate ALL files needed. Include:
-- package.json (or requirements.txt for Python) with @chipi-stack packages at ^${template.min_sdk_version || '14.1.0'}
-- All config files (tsconfig.json, next.config.js/mjs, tailwind.config.ts, etc.)
-- All source files with working UI components
-- .env.example with descriptive placeholder values
-- .gitignore
-
-Do NOT include: node_modules, .env, lock files, or test files.
-File paths are relative to the project root (e.g., package.json, not tutorials/slug/package.json).`;
+            const prompt = [
+              'You are generating a complete, buildable tutorial project for the Chipi SDK.',
+              'Your code will be tested by a QA engineer who validates that the docs are correct.',
+              '',
+              '## Project',
+              template.title,
+              'Framework: ' + framework,
+              'Auth: ' + auth,
+              '',
+              '## Rules',
+              '1. Follow the documentation pages EXACTLY as written. Use the code examples from docs as-is.',
+              '2. Every hook/method listed below MUST appear in your source code and be functional.',
+              '3. The project must work from a clean clone: git clone, install, build, run.',
+              '4. Include .env.example with placeholder values. NEVER include real API keys or secrets.',
+              '5. Keep the code clean and minimal. No extra features beyond what the docs describe.',
+              '6. If a docs page seems wrong or missing info, add a comment: // DOCS-ISSUE: description',
+              '7. Use the EXACT import paths and API patterns shown in the docs.',
+              '8. For Starknet addresses, use mainnet USDC: 0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb',
+              '',
+              '## Packages to install',
+              pkgList,
+              '',
+              '## Hooks/methods that MUST appear in code',
+              hookList,
+              '',
+              '## Documentation pages (follow in this order)',
+              '',
+              docsSection,
+              '',
+              '## Output format',
+              'Output each file using this EXACT format (markers must be on their own line):',
+              '',
+              '=== FILE: path/to/file.ext ===',
+              'file content here',
+              '=== END FILE ===',
+              '',
+              'Generate ALL files needed. Include:',
+              '- package.json (or requirements.txt for Python) with @chipi-stack packages at ^' + minVer,
+              '- All config files (tsconfig.json, next.config.js/mjs, tailwind.config.ts, etc.)',
+              '- All source files with working UI components',
+              '- .env.example with descriptive placeholder values',
+              '- .gitignore',
+              '',
+              'Do NOT include: node_modules, .env, lock files, or test files.',
+              'File paths are relative to the project root (e.g., package.json, not tutorials/slug/package.json).',
+            ].join('\n');
 
             // --- Call Claude API ---
             console.log(`Calling Claude API (${docsContent.length} docs fetched)...`);
