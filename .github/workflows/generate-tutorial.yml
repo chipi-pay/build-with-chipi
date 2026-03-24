@@ -151,6 +151,8 @@ jobs:
               '6. If a docs page seems wrong or missing info, add a comment: // DOCS-ISSUE: description',
               '7. Use the EXACT import paths and API patterns shown in the docs.',
               '8. For Starknet addresses, use mainnet USDC: 0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb',
+              '9. Use React 18 (^18.3.1) and Next.js 14 (^14.2.30) — React 19 has peer dep conflicts with Clerk.',
+              '10. Use the EXACT package versions specified below in package.json. Do NOT change them.',
               '',
               '## Packages to install (use EXACT versions in package.json)',
               pkgList,
