@@ -8,10 +8,9 @@
   "assignee": "YrandaNova",
   "unlock_phrase": "session-architect",
   "next_template": "06-custom-contracts.json",
-  "min_sdk_version": "14.1.0",
-  "packages": [
-    "@chipi-stack/nextjs"
-  ],
+  "packages": {
+    "@chipi-stack/nextjs": "^14.1.1"
+  },
   "hooks_to_exercise": [
     "useCreateWallet",
     "useCreateSessionKey",

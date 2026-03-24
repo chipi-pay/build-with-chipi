@@ -8,10 +8,9 @@
   "assignee": "YrandaNova",
   "unlock_phrase": "auth-agnostic",
   "next_template": "10-wallet-upgrade.json",
-  "min_sdk_version": "14.1.0",
-  "packages": [
-    "@chipi-stack/chipi-react"
-  ],
+  "packages": {
+    "@chipi-stack/chipi-react": "^14.1.1"
+  },
   "hooks_to_exercise": [
     "useCreateWallet",
     "ChipiBrowserSDK"

@@ -127,9 +127,11 @@ jobs:
               '### ' + d.url + '\n\n' + d.content
             ).join('\n\n---\n\n');
 
-            const pkgList = (template.packages || []).join(', ');
+            // packages is now an object { name: version } not an array
+            const pkgs = template.packages || {};
+            const pkgList = Object.entries(pkgs).map(([name, ver]) => name + '@' + ver).join(', ');
+            const pkgJsonDeps = Object.entries(pkgs).map(([name, ver]) => '    "' + name + '": "' + ver + '"').join(',\n');
             const hookList = (template.hooks_to_exercise || []).join(', ');
-            const minVer = template.min_sdk_version || '14.1.0';
 
             const prompt = [
               'You are generating a complete, buildable tutorial project for the Chipi SDK.',
@@ -150,8 +152,11 @@ jobs:
               '7. Use the EXACT import paths and API patterns shown in the docs.',
               '8. For Starknet addresses, use mainnet USDC: 0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb',
               '',
-              '## Packages to install',
+              '## Packages to install (use EXACT versions in package.json)',
               pkgList,
+              '',
+              'In package.json dependencies, use these exact versions:',
+              pkgJsonDeps,
               '',
               '## Hooks/methods that MUST appear in code',
               hookList,
@@ -168,7 +173,7 @@ jobs:
               '=== END FILE ===',
               '',
               'Generate ALL files needed. Include:',
-              '- package.json (or requirements.txt for Python) with @chipi-stack packages at ^' + minVer,
+              '- package.json (or requirements.txt for Python) with the EXACT package versions listed above',
               '- All config files (tsconfig.json, next.config.js/mjs, tailwind.config.ts, etc.)',
               '- All source files with working UI components',
               '- .env.example with descriptive placeholder values',
