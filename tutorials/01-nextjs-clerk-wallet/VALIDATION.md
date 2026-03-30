@@ -1,0 +1,98 @@
+# Validation Report — Tutorial 01: Next.js + Clerk Wallet
+
+**Tester:** Yranda  
+**Date:** 2026-03-26  
+**Framework:** Next.js (App Router)  
+**Auth Provider:** Clerk  
+**SDK Version:** @chipi-stack/nextjs@14.2.0  
+**Tutorial Issue:** [chipi-pay/sdks#171](https://github.com/chipi-pay/sdks/issues/171)
+
+---
+
+## Docs Pages Validation
+
+| # | Docs Page | Status | Bug Issue | Notes |
+|---|-----------|--------|-----------|-------|
+| 1 | [gasless quickstart](https://docs.chipipay.com/sdk/nextjs/gasless-quickstart) | PASS | N/A | Provider/env flow works |
+| 2 | [gasless clerk setup](https://docs.chipipay.com/sdk/nextjs/gasless-clerk-setup) | PASS | N/A | Clerk + Chipi works |
+| 3 | [use passkeys](https://docs.chipipay.com/sdk/nextjs/use-passkeys) | PASS | N/A | passkey create flow implemented |
+| 4 | [useCreateWallet](https://docs.chipipay.com/sdk/nextjs/hooks/use-create-wallet) | PASS | N/A | PIN + passkey creation implemented |
+| 5 | [useGetWallet](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-wallet) | PASS | N/A | Wallet fetched by externalUserId |
+| 6 | [useGetTokenBalance](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-token-balance) | PASS | N/A | Balance shown with formatted output |
+| 7 | [useTransfer](https://docs.chipipay.com/sdk/nextjs/hooks/use-transfer) | PASS | N/A | PIN transfer active |
+| 8 | [useGetTransactionList](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-transaction-list) | PASS | N/A | Paginated list added |
+| 9 | [useGetTransactionStatus](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-transaction-status) | PASS | N/A | Sonner-based status polling added |
+| 10 | [useMigrateWalletToPasskey](https://docs.chipipay.com/sdk/nextjs/hooks/use-migrate-wallet-to-passkey) | FAIL | [#171](https://github.com/chipi-pay/sdks/issues/171) | Rotate/migrate passkey flow failed during validation |
+
+---
+
+## Features Validation
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Sign in / sign up with Clerk | PASS | Guarded in `page.tsx` |
+| Create wallet with passkey | PASS | `createWalletPasskey` + `useCreateWallet` |
+| View wallet address | PASS | Address + normalized shown |
+| View USDC balance | PASS | Raw + formatted shown |
+| Send USDC gaslessly | PASS | PIN transfer active |
+| View transaction history | PASS | Table with pagination |
+| Check transaction status | PASS | Sonner toast polling |
+| Receive: address + QR | PASS | Added receive panel |
+| Add/rotate passkey | FAIL | Failed during validation; documented in [#171](https://github.com/chipi-pay/sdks/issues/171) |
+
+---
+
+## Hooks / Methods Exercised
+
+| Hook/Method | Used in file | Works? |
+|-------------|-------------|--------|
+| useCreateWallet | `app/components/create-wallet-with-pin.tsx` and `app/components/create-wallet-with-passkey.tsx` | YES |
+| createWalletPasskey | `app/components/create-wallet-with-passkey.tsx` | YES |
+| useGetWallet | `app/components/wallet-dashboard.tsx` | YES |
+| useGetTokenBalance | `app/components/wallet-dashboard.tsx` | YES |
+| useTransfer | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
+| useGetTransactionList | `app/components/transaction-list-table.tsx` | YES |
+| useGetTransactionStatus | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
+| useChipiWallet | Not implemented in this tutorial code | NO |
+| useMigrateWalletToPasskey | Failed flow tracked in [#171](https://github.com/chipi-pay/sdks/issues/171) | NO |
+
+---
+
+## Bugs Found
+
+| Bug | Repo | Issue | Status |
+|-----|------|-------|--------|
+| Rotate/migrate passkey flow failed | chipi-pay/sdks | [#171](https://github.com/chipi-pay/sdks/issues/171) | Open |
+
+---
+
+## Known Non-Blocking Warnings
+
+- Hydration mismatch warning can appear when browser extensions inject attributes (observed: `data-lt-installed` from LanguageTool). This is environment-specific and not a Chipi/Clerk flow break.
+- Clerk warning about development keys (`pk_test_...`) is expected in local development and should only be treated as FAIL for production deploy checks.
+
+---
+
+## Build Verification
+
+```bash
+cd tutorials/01-nextjs-clerk-wallet
+npm install
+npm run build
+npm run dev
+```
+
+- [x] Clean install works (from clean clone)
+- [x] Build passes
+- [x] App runs and checklist items were validated manually (except passkey migrate/rotate, tracked in [#171](https://github.com/chipi-pay/sdks/issues/171))
+
+---
+
+## Recording
+
+- [x] Full walkthrough recorded (25 min)
+- [x] Long video link (25 min): https://www.youtube.com/watch?v=ruaItwvZPfM
+
+- Note: Aligned with the team to publish both formats: a full 25-minute validation walkthrough and shorter ~5-minute cuts for engagement.
+
+

@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+:root {
+  --background: #090014;
+  --foreground: #e0e0e0;
+  --card: rgba(26, 16, 60, 0.82);
+  --magenta: #ff00ff;
+  --cyan: #00ffff;
+  --orange: #ff9900;
+  --border: #2d1b4e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-mono), monospace;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 20, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+  background-size: 100% 4px;
+  opacity: 0.28;
+  z-index: 0;
+}
+
+.vapor-grid {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 42vh;
+  pointer-events: none;
+  background-image:
+    linear-gradient(transparent 95%, rgba(255, 0, 255, 0.7) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(0, 255, 255, 0.65) 95%);
+  background-size: 36px 36px;
+  transform: perspective(500px) rotateX(62deg) translateY(42px) scale(1.4);
+  mask-image: linear-gradient(to top, transparent 8%, black 60%);
+  z-index: 0;
+}
+
+.vapor-card {
+  position: relative;
+  z-index: 1;
+  border: 1px solid color-mix(in srgb, var(--magenta) 45%, transparent);
+  border-top: 2px solid var(--cyan);
+  background: var(--card);
+  backdrop-filter: blur(8px);
+  border-radius: 0;
+  padding: 1rem;
+  box-shadow: 0 0 26px rgba(255, 0, 255, 0.18);
+}
+
+.vapor-title {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+}
+
+.vapor-hero {
+  font-family: var(--font-sans), sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: linear-gradient(to right, var(--orange), var(--magenta), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.vapor-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: color-mix(in srgb, var(--foreground) 72%, transparent);
+}
+
+.vapor-label {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.08em;
+  color: #cdd6f4;
+}
+
+.vapor-input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent);
+  background: rgba(8, 11, 35, 0.92);
+  color: #ecfeff;
+  padding: 0.6rem 0.75rem;
+  outline: none;
+}
+
+.vapor-input::placeholder {
+  color: color-mix(in srgb, var(--magenta) 45%, #ffffff 55%);
+}
+
+.vapor-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.18), 0 0 14px rgba(0, 255, 255, 0.35);
+}
+
+.vapor-btn-primary,
+.vapor-btn-secondary,
+.vapor-btn-ghost {
+  border: 1px solid transparent;
+  padding: 0.58rem 0.9rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 200ms linear;
+}
+
+.vapor-btn-primary {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: transparent;
+}
+
+.vapor-btn-primary:hover {
+  color: #0b0018;
+  background: var(--cyan);
+  box-shadow: 0 0 16px var(--cyan);
+}
+
+.vapor-btn-secondary {
+  border-color: var(--magenta);
+  color: var(--magenta);
+  background: transparent;
+}
+
+.vapor-btn-secondary:hover {
+  color: #fff;
+  background: var(--magenta);
+  box-shadow: 0 0 16px var(--magenta);
+}
+
+.vapor-btn-ghost {
+  border-color: color-mix(in srgb, var(--foreground) 20%, transparent);
+  color: #e4e4e7;
+  background: transparent;
+}
+
+.vapor-btn-ghost:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
