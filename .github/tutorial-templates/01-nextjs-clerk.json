@@ -8,11 +8,10 @@
   "assignee": "YrandaNova",
   "unlock_phrase": "passkey-pioneer",
   "next_template": "02-expo-clerk.json",
-  "min_sdk_version": "14.1.0",
-  "packages": [
-    "@chipi-stack/nextjs",
-    "@chipi-stack/chipi-passkey"
-  ],
+  "packages": {
+    "@chipi-stack/nextjs": "^14.1.1",
+    "@chipi-stack/chipi-passkey": "^2.0.1"
+  },
   "hooks_to_exercise": [
     "useCreateWallet",
     "useGetWallet",

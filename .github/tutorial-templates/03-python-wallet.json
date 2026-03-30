@@ -8,10 +8,9 @@
   "assignee": "YrandaNova",
   "unlock_phrase": "python-gasless",
   "next_template": "04-session-keys.json",
-  "min_sdk_version": "14.1.0",
-  "packages": [
-    "chipi-python"
-  ],
+  "packages": {
+    "chipi-python": "latest"
+  },
   "hooks_to_exercise": [
     "create_wallet",
     "get_wallet",

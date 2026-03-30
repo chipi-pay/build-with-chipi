@@ -153,8 +153,8 @@ jobs:
               }
 
               // --- Check packages installable ---
-              const packages = template.packages || [];
-              for (const pkg of packages) {
+              const packages = template.packages || {};
+              for (const pkg of Object.keys(packages)) {
                 result.packages.push({ name: pkg, installable: packageInstallable(pkg) });
               }
 
