@@ -180,7 +180,7 @@ jobs:
               body += `**${r.title}**\n\n`;
 
               if (missingHooks.length > 0) {
-                body += `\u274C **Missing hooks/exports:** ${missingHooks.map(h => \`\\\`${h.name}\\\`\`).join(', ')}\n`;
+                body += '\u274C **Missing hooks/exports:** ' + missingHooks.map(h => '`' + h.name + '`').join(', ') + '\n';
               }
               if (brokenDocs.length > 0) {
                 body += `\u274C **Broken docs pages:**\n`;
