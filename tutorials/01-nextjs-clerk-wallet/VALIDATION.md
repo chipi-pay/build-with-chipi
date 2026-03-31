@@ -5,7 +5,9 @@
 **Framework:** Next.js (App Router)  
 **Auth Provider:** Clerk  
 **SDK Version:** @chipi-stack/nextjs@14.2.0  
-**Tutorial Issue:** [chipi-pay/sdks#171](https://github.com/chipi-pay/sdks/issues/171)
+**Tutorial Issue:** [chipi-pay/sdks#171](https://github.com/chipi-pay/sdks/issues/171) — resolved in production; end-to-end PIN → migrate → passkey transfer revalidated in this tutorial (2026-03-30).
+
+**Production update (team):** Backend fixes verified: `useMigrateWalletToPasskey` persists; `updateWalletEncryption` no longer 404; `createWallet` idempotent. App merges post-migration wallet into UI so `useTransfer` + passkey uses updated `encryptedPrivateKey` (not stale React Query cache).
 
 ---
 
@@ -22,7 +24,7 @@
 | 7 | [useTransfer](https://docs.chipipay.com/sdk/nextjs/hooks/use-transfer) | PASS | N/A | PIN transfer active |
 | 8 | [useGetTransactionList](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-transaction-list) | PASS | N/A | Paginated list added |
 | 9 | [useGetTransactionStatus](https://docs.chipipay.com/sdk/nextjs/hooks/use-get-transaction-status) | PASS | N/A | Sonner-based status polling added |
-| 10 | [useMigrateWalletToPasskey](https://docs.chipipay.com/sdk/nextjs/hooks/use-migrate-wallet-to-passkey) | FAIL | [#171](https://github.com/chipi-pay/sdks/issues/171) | Rotate/migrate passkey flow failed during validation |
+| 10 | [useMigrateWalletToPasskey](https://docs.chipipay.com/sdk/nextjs/hooks/use-migrate-wallet-to-passkey) | PASS | N/A | PIN → passkey migration + passkey transfer verified post-deploy |
 
 ---
 
@@ -34,11 +36,11 @@
 | Create wallet with passkey | PASS | `createWalletPasskey` + `useCreateWallet` |
 | View wallet address | PASS | Address + normalized shown |
 | View USDC balance | PASS | Raw + formatted shown |
-| Send USDC gaslessly | PASS | PIN transfer active |
+| Send USDC gaslessly | PASS | PIN transfer; passkey transfer after migration (`transfer-with-pin-and-passkey.tsx`) |
 | View transaction history | PASS | Table with pagination |
 | Check transaction status | PASS | Sonner toast polling |
 | Receive: address + QR | PASS | Added receive panel |
-| Add/rotate passkey | FAIL | Failed during validation; documented in [#171](https://github.com/chipi-pay/sdks/issues/171) |
+| Add/rotate passkey | PASS | Migrate to passkey via `migrate-wallet-to-passkey.tsx`; transfer with passkey verified |
 
 ---
 
@@ -53,8 +55,8 @@
 | useTransfer | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
 | useGetTransactionList | `app/components/transaction-list-table.tsx` | YES |
 | useGetTransactionStatus | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
-| useChipiWallet | Not implemented in this tutorial code | NO |
-| useMigrateWalletToPasskey | Failed flow tracked in [#171](https://github.com/chipi-pay/sdks/issues/171) | NO |
+| useChipiWallet | Not used — individual hooks preferred for tutorial clarity | N/A |
+| useMigrateWalletToPasskey | `app/components/migrate-wallet-to-passkey.tsx` | YES |
 
 ---
 
@@ -62,7 +64,7 @@
 
 | Bug | Repo | Issue | Status |
 |-----|------|-------|--------|
-| Rotate/migrate passkey flow failed | chipi-pay/sdks | [#171](https://github.com/chipi-pay/sdks/issues/171) | Open |
+| Rotate/migrate passkey (backend persistence / 404) | chipi-pay/sdks | [#171](https://github.com/chipi-pay/sdks/issues/171) | Fixed in production — verified in tutorial (2026-03-30) |
 
 ---
 
@@ -84,7 +86,7 @@ npm run dev
 
 - [x] Clean install works (from clean clone)
 - [x] Build passes
-- [x] App runs and checklist items were validated manually (except passkey migrate/rotate, tracked in [#171](https://github.com/chipi-pay/sdks/issues/171))
+- [x] App runs and checklist items validated manually, including PIN → passkey migration and passkey transfer ([#171](https://github.com/chipi-pay/sdks/issues/171) fix verified)
 
 ---
 

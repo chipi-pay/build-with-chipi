@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { SignIn, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
-import { Chain, ChainToken, useGetTokenBalance, useGetWallet } from "@chipi-stack/nextjs";
+import { Chain, ChainToken, useGetTokenBalance, useGetWallet, type GetWalletResponse } from "@chipi-stack/nextjs";
 import { Toaster } from "sonner";
 import { CreateWalletWithPin } from "./create-wallet-with-pin";
 import { CreateWalletWithPasskey } from "./create-wallet-with-passkey";
+import { MigrateWalletToPasskey } from "./migrate-wallet-to-passkey";
 import { TransferWithPinAndPasskey } from "./transfer-with-pin-and-passkey";
 import { TransactionListTable } from "./transaction-list-table";
 
@@ -38,6 +40,9 @@ function formatBalance(balance: string, decimals: number): string {
 export function WalletDashboard() {
   const { isSignedIn, userId, getToken } = useAuth();
 
+  /** After PIN→passkey migration, `useGetWallet` cache can still hold the PIN-encrypted key until refetch completes. Merge server migration payload so passkey transfer uses the new ciphertext. */
+  const [walletAfterMigration, setWalletAfterMigration] = useState<GetWalletResponse | null>(null);
+
   const {
     data: wallet,
     isLoading: walletLoading,
@@ -53,6 +58,15 @@ export function WalletDashboard() {
     queryOptions: { enabled: Boolean(userId) },
   });
 
+  const effectiveWallet =
+    wallet && walletAfterMigration && wallet.publicKey === walletAfterMigration.publicKey
+      ? { ...wallet, ...walletAfterMigration }
+      : wallet;
+
+  useEffect(() => {
+    setWalletAfterMigration(null);
+  }, [userId, wallet?.publicKey]);
+
   const {
     data: tokenBalance,
     isLoading: balanceLoading,
@@ -62,29 +76,44 @@ export function WalletDashboard() {
     params: {
       chainToken: ChainToken.USDC,
       chain: Chain.STARKNET,
-      walletPublicKey: wallet?.publicKey ?? "",
+      walletPublicKey: effectiveWallet?.publicKey ?? "",
     },
     getBearerToken: async () => {
       const token = await getToken();
       if (!token) throw new Error("No token found");
       return token;
     },
-    queryOptions: { enabled: Boolean(userId && wallet?.publicKey) },
+    queryOptions: { enabled: Boolean(userId && effectiveWallet?.publicKey) },
   });
 
-  const loadWallet = async () => {
+  const refreshWalletFromServer = async () => {
     if (!userId) return;
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("No token found");
+    const token = await getToken();
+    if (!token) throw new Error("No token found");
+    await fetchWallet({
+      params: { externalUserId: userId },
+      getBearerToken: async () => token,
+    });
+    void refetchBalance();
+  };
 
-      await fetchWallet({
-        params: { externalUserId: userId },
-        getBearerToken: async () => token,
-      });
-      void refetchBalance();
+  const loadWallet = async () => {
+    try {
+      await refreshWalletFromServer();
+      setWalletAfterMigration(null);
     } catch (err) {
       console.error("Error loading wallet:", err);
+    }
+  };
+
+  const handleMigrationSuccess = async (updated: Pick<GetWalletResponse, "publicKey"> & { encryptedPrivateKey: string }) => {
+    if (wallet) {
+      setWalletAfterMigration({ ...wallet, ...updated });
+    }
+    try {
+      await refreshWalletFromServer();
+    } catch (err) {
+      console.error("Error refreshing wallet after migration:", err);
     }
   };
 
@@ -121,15 +150,15 @@ export function WalletDashboard() {
               </p>
             )}
 
-            {wallet && (
+            {effectiveWallet && (
               <div className="vapor-card text-zinc-100">
                 <p className="break-all font-mono text-sm">
                   <span className="text-zinc-400">Public Key: </span>
-                  {wallet.publicKey}
+                  {effectiveWallet.publicKey}
                 </p>
                 <p className="mt-2 break-all font-mono text-sm">
                   <span className="text-zinc-400">Normalized: </span>
-                  {wallet.normalizedPublicKey}
+                  {effectiveWallet.normalizedPublicKey}
                 </p>
                 <button
                   type="button"
@@ -141,7 +170,7 @@ export function WalletDashboard() {
               </div>
             )}
 
-            {wallet?.publicKey && (
+            {effectiveWallet?.publicKey && (
               <div className="vapor-card">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold text-zinc-300">USDC balance (Starknet)</h2>
@@ -177,9 +206,9 @@ export function WalletDashboard() {
               </div>
             )}
 
-            {wallet && (
+            {effectiveWallet && (
               <section className="grid gap-4 md:grid-cols-2">
-                <TransferWithPinAndPasskey wallet={wallet} />
+                <TransferWithPinAndPasskey wallet={effectiveWallet} />
                 <div className="vapor-card">
                   <h2 className="vapor-title">Receive</h2>
                   <p className="text-xs text-zinc-300">Share your address or QR to receive USDC.</p>
@@ -188,14 +217,25 @@ export function WalletDashboard() {
                     width={180}
                     height={180}
                     alt="Wallet QR"
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(wallet.publicKey)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(effectiveWallet.publicKey)}`}
                   />
-                  <p className="mt-3 break-all font-mono text-xs text-cyan-300">{wallet.publicKey}</p>
+                  <p className="mt-3 break-all font-mono text-xs text-cyan-300">{effectiveWallet.publicKey}</p>
                 </div>
               </section>
             )}
 
-            <TransactionListTable walletAddress={wallet?.publicKey} getBearerToken={getToken} />
+            {effectiveWallet && (
+              <section>
+                <MigrateWalletToPasskey
+                  wallet={effectiveWallet}
+                  userId={userId}
+                  getBearerToken={getToken}
+                  onMigrationSuccess={handleMigrationSuccess}
+                />
+              </section>
+            )}
+
+            <TransactionListTable walletAddress={effectiveWallet?.publicKey} getBearerToken={getToken} />
           </>
         )}
       </div>
