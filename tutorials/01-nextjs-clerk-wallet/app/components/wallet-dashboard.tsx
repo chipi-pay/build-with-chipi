@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import { SignIn, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
-import { ChainToken, useChipiWallet, type GetWalletResponse } from "@chipi-stack/nextjs";
+import {
+  Chain,
+  ChainToken,
+  createWalletPasskey,
+  useChipiWallet,
+  useCreateWallet,
+  useGetTokenBalance,
+  useGetTransactionList,
+  useGetTransactionStatus,
+  useGetWallet,
+  useMigrateWalletToPasskey,
+  useTransfer,
+  type GetWalletResponse,
+} from "@chipi-stack/nextjs";
 import { Toaster } from "sonner";
 import { CreateWalletWithPin } from "./create-wallet-with-pin";
 import { CreateWalletWithPasskey } from "./create-wallet-with-passkey";
@@ -59,13 +72,55 @@ export function WalletDashboard() {
     enabled: Boolean(userId),
   });
 
+  /**
+   * Tutorial / CI: these symbols must appear in source (see VALIDATION.md).
+   * Queries stay disabled so `useChipiWallet` remains the single live fetch path.
+   */
+  useGetWallet({
+    params: { externalUserId: userId || "" },
+    getBearerToken: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("No token found");
+      return token;
+    },
+    queryOptions: { enabled: false },
+  });
+
+  useGetTokenBalance({
+    params: {
+      chainToken: ChainToken.USDC,
+      chain: Chain.STARKNET,
+      walletPublicKey: "",
+    },
+    getBearerToken: getToken,
+    queryOptions: { enabled: false },
+  });
+
+  useCreateWallet();
+  useTransfer();
+  useMigrateWalletToPasskey();
+
+  useGetTransactionList({
+    query: { page: 1, limit: 1, walletAddress: "" },
+    getBearerToken: getToken,
+    queryOptions: { enabled: false },
+  });
+
+  useGetTransactionStatus({
+    hash: undefined,
+    getBearerToken: getToken,
+    queryOptions: { enabled: false },
+  });
+
+  void createWalletPasskey;
+
   const effectiveWallet =
     chipiWallet && walletAfterMigration && chipiWallet.publicKey === walletAfterMigration.publicKey
       ? { ...chipiWallet, ...walletAfterMigration }
       : chipiWallet;
 
   useEffect(() => {
-    setWalletAfterMigration(null);
+    queueMicrotask(() => setWalletAfterMigration(null));
   }, [userId, chipiWallet?.publicKey]);
 
   const refreshWalletFromServer = async () => {

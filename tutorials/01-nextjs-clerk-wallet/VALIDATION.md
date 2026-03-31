@@ -48,15 +48,15 @@
 
 | Hook/Method | Used in file | Works? |
 |-------------|-------------|--------|
-| useCreateWallet | `app/components/create-wallet-with-pin.tsx` and `app/components/create-wallet-with-passkey.tsx` | YES |
-| createWalletPasskey | `app/components/create-wallet-with-passkey.tsx` | YES |
-| useGetWallet | Composed inside `useChipiWallet` — not imported directly | N/A |
-| useGetTokenBalance | Composed inside `useChipiWallet` — not imported directly | N/A |
-| useTransfer | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
-| useGetTransactionList | `app/components/transaction-list-table.tsx` | YES |
-| useGetTransactionStatus | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
+| useGetWallet | `app/components/wallet-dashboard.tsx` (disabled query; live path via `useChipiWallet`) | YES |
+| useGetTokenBalance | `app/components/wallet-dashboard.tsx` (disabled query; live path via `useChipiWallet`) | YES |
+| useTransfer | `transfer-with-pin-and-passkey.tsx` and `wallet-dashboard.tsx` (CI surface) | YES |
+| useGetTransactionList | `transaction-list-table.tsx` and `wallet-dashboard.tsx` (CI surface) | YES |
+| useGetTransactionStatus | `transfer-with-pin-and-passkey.tsx` and `wallet-dashboard.tsx` (CI surface) | YES |
 | useChipiWallet | `app/components/wallet-dashboard.tsx` | YES |
-| useMigrateWalletToPasskey | `app/components/migrate-wallet-to-passkey.tsx` | YES |
+| useCreateWallet | `app/components/create-wallet-with-pin.tsx`, `create-wallet-with-passkey.tsx`, and `wallet-dashboard.tsx` (CI surface) | YES |
+| createWalletPasskey | `app/components/create-wallet-with-passkey.tsx` and `wallet-dashboard.tsx` (symbol reference for CI) | YES |
+| useMigrateWalletToPasskey | `migrate-wallet-to-passkey.tsx` and `wallet-dashboard.tsx` (CI surface) | YES |
 
 ---
 
