@@ -50,12 +50,12 @@
 |-------------|-------------|--------|
 | useCreateWallet | `app/components/create-wallet-with-pin.tsx` and `app/components/create-wallet-with-passkey.tsx` | YES |
 | createWalletPasskey | `app/components/create-wallet-with-passkey.tsx` | YES |
-| useGetWallet | `app/components/wallet-dashboard.tsx` | YES |
-| useGetTokenBalance | `app/components/wallet-dashboard.tsx` | YES |
+| useGetWallet | Composed inside `useChipiWallet` — not imported directly | N/A |
+| useGetTokenBalance | Composed inside `useChipiWallet` — not imported directly | N/A |
 | useTransfer | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
 | useGetTransactionList | `app/components/transaction-list-table.tsx` | YES |
 | useGetTransactionStatus | `app/components/transfer-with-pin-and-passkey.tsx` | YES |
-| useChipiWallet | Not used — individual hooks preferred for tutorial clarity | N/A |
+| useChipiWallet | `app/components/wallet-dashboard.tsx` | YES |
 | useMigrateWalletToPasskey | `app/components/migrate-wallet-to-passkey.tsx` | YES |
 
 ---

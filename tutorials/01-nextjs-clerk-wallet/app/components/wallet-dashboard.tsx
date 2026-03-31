@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { SignIn, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
-import { Chain, ChainToken, useGetTokenBalance, useGetWallet, type GetWalletResponse } from "@chipi-stack/nextjs";
+import { ChainToken, useChipiWallet, type GetWalletResponse } from "@chipi-stack/nextjs";
 import { Toaster } from "sonner";
 import { CreateWalletWithPin } from "./create-wallet-with-pin";
 import { CreateWalletWithPasskey } from "./create-wallet-with-passkey";
@@ -40,61 +40,37 @@ function formatBalance(balance: string, decimals: number): string {
 export function WalletDashboard() {
   const { isSignedIn, userId, getToken } = useAuth();
 
-  /** After PIN→passkey migration, `useGetWallet` cache can still hold the PIN-encrypted key until refetch completes. Merge server migration payload so passkey transfer uses the new ciphertext. */
+  /** After PIN→passkey migration, cached wallet data can still hold the PIN-encrypted key until refetch completes. Merge server migration payload so passkey transfer uses the new ciphertext. */
   const [walletAfterMigration, setWalletAfterMigration] = useState<GetWalletResponse | null>(null);
 
   const {
-    data: wallet,
-    isLoading: walletLoading,
-    error: walletError,
-    fetchWallet,
-  } = useGetWallet({
-    params: { externalUserId: userId || "" },
-    getBearerToken: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("No token found");
-      return token;
-    },
-    queryOptions: { enabled: Boolean(userId) },
+    wallet: chipiWallet,
+    balance: tokenBalance,
+    formattedBalance,
+    isLoadingWallet: walletLoading,
+    isLoadingBalance: balanceLoading,
+    walletError,
+    refetchBalance,
+    refetchAll,
+  } = useChipiWallet({
+    externalUserId: userId ?? null,
+    getBearerToken: getToken,
+    defaultToken: ChainToken.USDC,
+    enabled: Boolean(userId),
   });
 
   const effectiveWallet =
-    wallet && walletAfterMigration && wallet.publicKey === walletAfterMigration.publicKey
-      ? { ...wallet, ...walletAfterMigration }
-      : wallet;
+    chipiWallet && walletAfterMigration && chipiWallet.publicKey === walletAfterMigration.publicKey
+      ? { ...chipiWallet, ...walletAfterMigration }
+      : chipiWallet;
 
   useEffect(() => {
     setWalletAfterMigration(null);
-  }, [userId, wallet?.publicKey]);
-
-  const {
-    data: tokenBalance,
-    isLoading: balanceLoading,
-    error: balanceError,
-    refetch: refetchBalance,
-  } = useGetTokenBalance({
-    params: {
-      chainToken: ChainToken.USDC,
-      chain: Chain.STARKNET,
-      walletPublicKey: effectiveWallet?.publicKey ?? "",
-    },
-    getBearerToken: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("No token found");
-      return token;
-    },
-    queryOptions: { enabled: Boolean(userId && effectiveWallet?.publicKey) },
-  });
+  }, [userId, chipiWallet?.publicKey]);
 
   const refreshWalletFromServer = async () => {
     if (!userId) return;
-    const token = await getToken();
-    if (!token) throw new Error("No token found");
-    await fetchWallet({
-      params: { externalUserId: userId },
-      getBearerToken: async () => token,
-    });
-    void refetchBalance();
+    await refetchAll();
   };
 
   const loadWallet = async () => {
@@ -107,8 +83,8 @@ export function WalletDashboard() {
   };
 
   const handleMigrationSuccess = async (updated: Pick<GetWalletResponse, "publicKey"> & { encryptedPrivateKey: string }) => {
-    if (wallet) {
-      setWalletAfterMigration({ ...wallet, ...updated });
+    if (chipiWallet) {
+      setWalletAfterMigration({ ...chipiWallet, ...updated });
     }
     try {
       await refreshWalletFromServer();
@@ -152,7 +128,21 @@ export function WalletDashboard() {
 
             {effectiveWallet && (
               <div className="vapor-card text-zinc-100">
-                <p className="break-all font-mono text-sm">
+                <p className="text-xs text-fuchsia-300/90">
+                  via <code className="text-cyan-200">useChipiWallet</code>
+                  {effectiveWallet.supportsSessionKeys != null && (
+                    <>
+                      {" "}
+                      · session keys:{" "}
+                      <span className="text-zinc-200">{effectiveWallet.supportsSessionKeys ? "yes" : "no"}</span>
+                    </>
+                  )}
+                </p>
+                <p className="mt-2 break-all font-mono text-sm">
+                  <span className="text-zinc-400">Short: </span>
+                  <span className="text-cyan-200">{effectiveWallet.shortAddress ?? "—"}</span>
+                </p>
+                <p className="mt-2 break-all font-mono text-sm">
                   <span className="text-zinc-400">Public Key: </span>
                   {effectiveWallet.publicKey}
                 </p>
@@ -184,19 +174,18 @@ export function WalletDashboard() {
                   </button>
                 </div>
                 {balanceLoading && <p className="text-zinc-400">Loading balance...</p>}
-                {balanceError != null && (
-                  <p className="text-red-400">
-                    Balance error: {balanceError instanceof Error ? balanceError.message : String(balanceError)}
-                  </p>
-                )}
                 {tokenBalance && !balanceLoading && (
                   <div className="space-y-1 font-mono text-sm">
+                    <p>
+                      <span className="text-zinc-400">Hook formatted: </span>
+                      <span className="text-lg font-semibold text-fuchsia-300">${formattedBalance} USDC</span>
+                    </p>
                     <p>
                       <span className="text-zinc-400">Raw: </span>
                       <span className="text-zinc-100">{tokenBalance.balance}</span>
                     </p>
                     <p>
-                      <span className="text-zinc-400">Formatted: </span>
+                      <span className="text-zinc-400">Formatted (local): </span>
                       <span className="text-lg font-semibold text-green-400">
                         {formatBalance(tokenBalance.balance, tokenBalance.decimals)} {tokenBalance.chainToken}
                       </span>
