@@ -4,7 +4,7 @@
 **Date:** 2026-03-26  
 **Framework:** Next.js (App Router)  
 **Auth Provider:** Clerk  
-**SDK Version:** @chipi-stack/nextjs@14.2.0  
+**SDK Version:** @chipi-stack/nextjs@14.2.1  
 **Tutorial Issue:** [chipi-pay/sdks#171](https://github.com/chipi-pay/sdks/issues/171) — resolved in production; end-to-end PIN → migrate → passkey transfer revalidated in this tutorial (2026-03-30).
 
 **Production update (team):** Backend fixes verified: `useMigrateWalletToPasskey` persists; `updateWalletEncryption` no longer 404; `createWallet` idempotent. App merges post-migration wallet into UI so `useTransfer` + passkey uses updated `encryptedPrivateKey` (not stale React Query cache).

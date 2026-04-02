@@ -29,6 +29,12 @@ const terminalStatuses = new Set<TxStatus>([
   "REVERTED",
 ]);
 
+function isValidTransferInput(recipient: string, amount: string): boolean {
+  const trimmed = recipient.trim();
+  const n = Number(amount);
+  return Boolean(trimmed) && Number.isFinite(n) && n > 0;
+}
+
 export function TransferWithPinAndPasskey({ wallet }: Props) {
   const { getToken } = useAuth();
   const { transferAsync, isLoading, isError, error } = useTransfer();
@@ -80,6 +86,10 @@ export function TransferWithPinAndPasskey({ wallet }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidTransferInput(recipient, amount)) {
+      toast.error("Please enter a valid recipient and amount");
+      return;
+    }
     const bearerToken = await getToken();
     if (!bearerToken) {
       toast.error("No bearer token available");
@@ -106,6 +116,10 @@ export function TransferWithPinAndPasskey({ wallet }: Props) {
   };
 
   const handlePasskeyTransfer = async () => {
+    if (!isValidTransferInput(recipient, amount)) {
+      toast.error("Please enter a valid recipient and amount");
+      return;
+    }
     const bearerToken = await getToken();
     if (!bearerToken) {
       toast.error("No bearer token available");

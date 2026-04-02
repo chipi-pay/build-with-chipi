@@ -52,10 +52,10 @@ export function MigrateWalletToPasskey({ wallet, userId, getBearerToken, onMigra
       }
 
       if (result?.wallet) {
-        localStorage.setItem("wallet", JSON.stringify(result.wallet));
+        localStorage.setItem(`wallet_${userId}`, JSON.stringify(result.wallet));
       }
       if (result?.credentialId) {
-        localStorage.setItem("passkeyCredentialId", result.credentialId);
+        localStorage.setItem(`passkeyCredentialId_${userId}`, result.credentialId);
       }
 
       toast.success("Wallet migrated to passkey — you can transfer with passkey using the updated wallet.");

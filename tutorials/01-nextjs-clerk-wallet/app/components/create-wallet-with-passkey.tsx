@@ -33,8 +33,8 @@ export function CreateWalletWithPasskey({ userId }: { userId: string }) {
         bearerToken,
       });
 
-      localStorage.setItem("wallet", JSON.stringify(result));
-      localStorage.setItem("credentialId", credentialId);
+      localStorage.setItem(`wallet_${userId}`, JSON.stringify(result));
+      localStorage.setItem(`credentialId_${userId}`, credentialId);
       setWallet(result);
     } catch (err) {
       console.error(err);
