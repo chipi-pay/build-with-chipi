@@ -1,0 +1,21 @@
+**/node_modules
+**/.next
+**/.clerk
+
+# Next.js / build artifacts
+**/.vercel
+**/out
+**/dist
+
+# Env files (avoid committing secrets)
+**/.env
+**/.env.*
+**/.envrc
+**/env-example.ts
+
+# Expo artifacts (if present in nested projects)
+**/.expo
+**/eas-build
+
+# OS/editor junk
+.DS_Store

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@chipi-stack/nextjs": "^14.2.0"
+  }
+}
