@@ -1,13 +1,29 @@
 {
   "expo": {
-    "name": "Chipi Expo Clerk Wallet",
-    "slug": "chipi-expo-clerk-wallet",
+    "name": "chipi-expo-clerk-tutorial",
+    "slug": "chipi-expo-clerk-tutorial",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "chipi-expo-clerk-wallet",
     "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chipi.expo.clerk.tutorial",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to use Face ID to unlock your wallet."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.chipi.expo.clerk.tutorial"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
       [
         "expo-local-authentication",
@@ -18,24 +34,6 @@
       "expo-secure-store",
       "expo-router"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.chipi.expoclerkwallet",
-      "infoPlist": {
-        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to use Face ID to unlock your wallet."
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.chipi.expoclerkwallet"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
-    }
+    "scheme": "chipi-expo-clerk-tutorial"
   }
 }

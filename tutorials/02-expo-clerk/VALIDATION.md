@@ -31,6 +31,7 @@
 | useGetTokenBalance | YES / NO | YES / NO | |
 | useTransfer | YES / NO | YES / NO | |
 | useGetTransactionList | YES / NO | YES / NO | |
+| useSyncOnChainTransfers | YES / NO | YES / NO | |
 | useMigrateWalletToPasskey | YES / NO | YES / NO | |
 | createNativeWalletPasskey | YES / NO | YES / NO | |
 | isNativeBiometricSupported | YES / NO | YES / NO | |
