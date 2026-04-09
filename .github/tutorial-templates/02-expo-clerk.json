@@ -9,8 +9,8 @@
   "unlock_phrase": "biometric-sailor",
   "next_template": "03-python-wallet.json",
   "packages": {
-    "@chipi-stack/chipi-expo": "^14.1.1",
-    "@chipi-stack/chipi-passkey": "^2.0.1"
+    "@chipi-stack/chipi-expo": "^14.3.1",
+    "@chipi-stack/chipi-passkey": "^2.1.0"
   },
   "hooks_to_exercise": [
     "useCreateWallet",
@@ -19,6 +19,7 @@
     "useGetTokenBalance",
     "useTransfer",
     "useGetTransactionList",
+    "useSyncOnChainTransfers",
     "useMigrateWalletToPasskey",
     "createNativeWalletPasskey",
     "isNativeBiometricSupported"
