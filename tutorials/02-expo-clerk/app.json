@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "chipi-expo-clerk-tutorial",
+    "slug": "chipi-expo-clerk-tutorial",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chipi.expo.clerk.tutorial",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to use Face ID to unlock your wallet."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.chipi.expo.clerk.tutorial"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID to unlock your wallet."
+        }
+      ],
+      "expo-secure-store",
+      "expo-router"
+    ],
+    "scheme": "chipi-expo-clerk-tutorial"
+  }
+}
