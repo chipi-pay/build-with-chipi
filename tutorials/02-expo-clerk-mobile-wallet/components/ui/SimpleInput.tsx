@@ -1,5 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
-import { MW_COLORS, MW_RADIUS } from '@/constants/morgan-theme';
+
+import { MW_COLORS, MW_FONTS, MW_TYPE } from '@/constants/morgan-theme';
 
 type Props = TextInputProps;
 
@@ -7,7 +8,7 @@ export function SimpleInput({ style, placeholderTextColor, ...rest }: Props) {
   return (
     <TextInput
       style={[styles.input, style]}
-      placeholderTextColor={placeholderTextColor ?? '#7A879B'}
+      placeholderTextColor={placeholderTextColor ?? MW_COLORS.mutedForeground}
       {...rest}
     />
   );
@@ -15,13 +16,15 @@ export function SimpleInput({ style, placeholderTextColor, ...rest }: Props) {
 
 const styles = StyleSheet.create({
   input: {
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: MW_RADIUS.sm,
+    borderWidth: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: MW_COLORS.border,
+    borderRadius: 0,
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
+    paddingHorizontal: 0,
+    fontSize: MW_TYPE.bodySm,
     color: MW_COLORS.foreground,
-    backgroundColor: '#090B10',
+    backgroundColor: MW_COLORS.background,
+    fontFamily: MW_FONTS.body,
   },
 });

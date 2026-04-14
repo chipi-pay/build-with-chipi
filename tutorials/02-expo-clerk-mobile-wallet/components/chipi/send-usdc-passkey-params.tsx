@@ -1,7 +1,10 @@
 import { ChainToken, useGetWallet, useTransfer } from '@chipi-stack/chipi-expo';
 import { useAuth } from '@clerk/clerk-expo';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import { chipiBaseStyles } from '@/constants/chipi-section-styles';
+import { MW_COLORS } from '@/constants/morgan-theme';
 
 import { getWalletStorage } from '@/utils/secureStorage';
 
@@ -12,7 +15,7 @@ import { getWalletStorage } from '@/utils/secureStorage';
 export function SendUsdcPasskeyParamsSection() {
   const { getToken, userId } = useAuth();
   const { transferAsync, isLoading, error } = useTransfer();
-  const { data: wallet } = useGetWallet();
+  useGetWallet();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
 
@@ -72,80 +75,46 @@ export function SendUsdcPasskeyParamsSection() {
   };
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.kicker}>Feature: Send USDC (passkey path)</Text>
-      <Text style={styles.hook}>Hook: useTransfer · usePasskey: true · externalUserId</Text>
-      <Text style={styles.note}>
+    <View style={chipiBaseStyles.section}>
+      <Text style={chipiBaseStyles.kicker}>Feature: Send USDC (passkey path)</Text>
+      <Text style={chipiBaseStyles.hook}>Hook: useTransfer · usePasskey: true · externalUserId</Text>
+      <Text style={chipiBaseStyles.note}>
         Requires a wallet created with usePasskey so the native encrypt key exists for this Clerk user.
       </Text>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Recipient</Text>
+      <View style={chipiBaseStyles.field}>
+        <Text style={chipiBaseStyles.label}>Recipient</Text>
         <TextInput
-          style={styles.input}
+          style={chipiBaseStyles.input}
           value={recipientAddress}
           onChangeText={setRecipientAddress}
           placeholder="0x..."
+          placeholderTextColor={MW_COLORS.mutedForeground}
           autoCapitalize="none"
         />
       </View>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Amount (USDC)</Text>
+      <View style={chipiBaseStyles.field}>
+        <Text style={chipiBaseStyles.label}>Amount (USDC)</Text>
         <TextInput
-          style={styles.input}
+          style={chipiBaseStyles.input}
           value={amount}
           onChangeText={setAmount}
           placeholder="0.00"
+          placeholderTextColor={MW_COLORS.mutedForeground}
           keyboardType="decimal-pad"
         />
       </View>
 
       <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={[chipiBaseStyles.primaryButton, { marginTop: 4 }, isLoading && chipiBaseStyles.primaryButtonDisabled]}
         onPress={() => void handleTransfer()}
-        disabled={isLoading || !recipientAddress.trim() || !amount.trim()}>
-        <Text style={styles.buttonText}>{isLoading ? 'Sending...' : 'Send with passkey'}</Text>
+        disabled={isLoading || !recipientAddress.trim() || !amount.trim()}
+        accessibilityRole="button">
+        <Text style={chipiBaseStyles.primaryButtonText}>{isLoading ? 'Sending...' : 'Send with passkey →'}</Text>
       </TouchableOpacity>
 
-      {error ? <Text style={styles.error}>Error: {error.message}</Text> : null}
+      {error ? <Text style={chipiBaseStyles.error}>Error: {error.message}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#0F1115',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-  },
-  kicker: { fontSize: 12, fontWeight: '700', color: '#F7931A', marginBottom: 4, letterSpacing: 1 },
-  hook: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  note: { fontSize: 13, color: '#94A3B8', marginBottom: 12 },
-  field: { marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#94A3B8' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#090B10',
-    color: '#FFFFFF',
-  },
-  button: {
-    backgroundColor: '#EA580C',
-    borderRadius: 999,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: '#F7931A99',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  error: { color: '#F87171', fontSize: 14, marginTop: 8 },
-});

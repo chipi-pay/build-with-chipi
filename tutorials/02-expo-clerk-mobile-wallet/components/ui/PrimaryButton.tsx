@@ -6,7 +6,8 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { MW_COLORS, MW_RADIUS, MW_SHADOWS } from '@/constants/morgan-theme';
+
+import { MW_COLORS, MW_FONTS, MW_TYPE } from '@/constants/morgan-theme';
 
 type Props = Omit<PressableProps, 'children'> & {
   title: string;
@@ -26,11 +27,20 @@ export function PrimaryButton({ title, active = true, onPress, style, ...rest }:
       style={(state): StyleProp<ViewStyle> => [
         styles.button,
         disabled && styles.buttonDisabled,
-        state.pressed && !disabled && styles.buttonPressed,
+        !disabled && state.pressed && styles.buttonPressed,
         typeof style === 'function' ? style(state) : style,
       ]}
       {...rest}>
-      <Text style={[styles.label, disabled && styles.labelDisabled]}>{title}</Text>
+      {({ pressed }) => (
+        <Text
+          style={[
+            styles.label,
+            disabled && styles.labelDisabled,
+            !disabled && pressed && styles.labelPressed,
+          ]}>
+          {title}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -38,32 +48,33 @@ export function PrimaryButton({ title, active = true, onPress, style, ...rest }:
 const styles = StyleSheet.create({
   button: {
     marginTop: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: MW_RADIUS.pill,
-    backgroundColor: MW_COLORS.accentDeep,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 0,
+    backgroundColor: MW_COLORS.foreground,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#F7931A99',
-    ...MW_SHADOWS.orangeGlow,
+    borderWidth: 2,
+    borderColor: MW_COLORS.foreground,
   },
   buttonPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.985 }],
+    backgroundColor: MW_COLORS.background,
   },
   buttonDisabled: {
-    backgroundColor: '#3A2B18',
-    borderColor: '#6A4C22',
+    opacity: 0.4,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: MW_COLORS.foreground,
-    letterSpacing: 0.8,
+    fontSize: MW_TYPE.label,
+    fontWeight: '600',
+    color: MW_COLORS.accentForeground,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
+    fontFamily: MW_FONTS.mono,
   },
   labelDisabled: {
-    color: '#9D8E79',
+    color: MW_COLORS.mutedForeground,
+  },
+  labelPressed: {
+    color: MW_COLORS.foreground,
   },
 });

@@ -4,7 +4,7 @@ import { type Href, Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { MW_COLORS, MW_RADIUS, MW_SHADOWS } from '@/constants/morgan-theme';
+import { MW_COLORS, MW_FONTS, MW_TYPE } from '@/constants/morgan-theme';
 
 /**
  * Standalone sign-in form page component (email/password + optional email code + Google OAuth).
@@ -74,7 +74,7 @@ export function SignInForm() {
   if (!isLoaded || !signIn) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color={MW_COLORS.accent} />
+        <ActivityIndicator size="large" color={MW_COLORS.foreground} />
       </View>
     );
   }
@@ -88,7 +88,7 @@ export function SignInForm() {
         autoCapitalize="none"
         value={emailAddress}
         placeholder="Enter email"
-        placeholderTextColor="#666666"
+        placeholderTextColor={MW_COLORS.mutedForeground}
         onChangeText={setEmailAddress}
         keyboardType="email-address"
       />
@@ -97,7 +97,7 @@ export function SignInForm() {
         style={styles.input}
         value={password}
         placeholder="Enter password"
-        placeholderTextColor="#666666"
+        placeholderTextColor={MW_COLORS.mutedForeground}
         secureTextEntry
         onChangeText={setPassword}
       />
@@ -130,52 +130,71 @@ const styles = StyleSheet.create({
   },
   title: {
     color: MW_COLORS.foreground,
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: MW_TYPE.pageTitle,
+    fontWeight: '700',
     marginBottom: 8,
+    fontFamily: MW_FONTS.display,
+    letterSpacing: -0.5,
   },
-  body: { color: MW_COLORS.muted },
+  body: { color: MW_COLORS.mutedForeground, fontFamily: MW_FONTS.body },
   label: {
     fontWeight: '600',
-    fontSize: 14,
-    color: MW_COLORS.muted,
+    fontSize: MW_TYPE.label,
+    color: MW_COLORS.mutedForeground,
+    fontFamily: MW_FONTS.bodySemi,
   },
   input: {
-    borderWidth: 1,
-    borderColor: MW_COLORS.border,
-    borderRadius: MW_RADIUS.sm,
-    padding: 12,
-    fontSize: 16,
+    borderWidth: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: MW_COLORS.border,
+    borderRadius: 0,
+    paddingVertical: 12,
+    paddingHorizontal: 0,
+    fontSize: MW_TYPE.body,
     color: MW_COLORS.foreground,
-    backgroundColor: MW_COLORS.surface,
+    backgroundColor: MW_COLORS.background,
+    fontFamily: MW_FONTS.body,
   },
   button: {
-    backgroundColor: MW_COLORS.accentDeep,
-    paddingVertical: 12,
+    backgroundColor: MW_COLORS.foreground,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: MW_RADIUS.pill,
+    borderRadius: 0,
     alignItems: 'center',
     marginTop: 8,
-    ...MW_SHADOWS.orangeGlow,
+    borderWidth: 2,
+    borderColor: MW_COLORS.foreground,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   buttonText: {
-    color: MW_COLORS.foreground,
-    fontWeight: '700',
+    color: MW_COLORS.accentForeground,
+    fontWeight: '600',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    fontFamily: MW_FONTS.mono,
+    fontSize: MW_TYPE.label,
   },
   googleButton: {
-    backgroundColor: MW_COLORS.surface,
-    borderWidth: 1,
-    borderColor: '#F7931A66',
-    paddingVertical: 12,
+    backgroundColor: MW_COLORS.background,
+    borderWidth: 2,
+    borderColor: MW_COLORS.foreground,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: MW_RADIUS.pill,
+    borderRadius: 0,
     alignItems: 'center',
     marginTop: 8,
+    minHeight: 48,
+    justifyContent: 'center',
   },
-  googleButtonText: { color: MW_COLORS.foreground, fontWeight: '700' },
+  googleButtonText: {
+    color: MW_COLORS.foreground,
+    fontWeight: '700',
+    fontFamily: MW_FONTS.bodySemi,
+  },
   linkContainer: {
     flexDirection: 'row',
     gap: 6,
@@ -183,12 +202,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   link: {
-    color: MW_COLORS.accent,
+    color: MW_COLORS.foreground,
     fontWeight: '700',
+    fontFamily: MW_FONTS.bodySemi,
+    textDecorationLine: 'underline',
   },
   error: {
-    color: MW_COLORS.danger,
-    fontSize: 12,
+    color: MW_COLORS.foreground,
+    fontSize: MW_TYPE.bodySm,
     marginTop: 4,
+    fontStyle: 'italic',
+    fontFamily: MW_FONTS.body,
+    borderLeftWidth: 4,
+    borderLeftColor: MW_COLORS.foreground,
+    paddingLeft: 10,
   },
 });

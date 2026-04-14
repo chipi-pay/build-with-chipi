@@ -1,9 +1,10 @@
 import { type ReactNode } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MW_COLORS, MW_RADIUS, MW_SHADOWS } from '@/constants/morgan-theme';
 
-// not necessary for the workshop or to include in video, but all of the hooks docs are here
+import { PaperTextureOverlay } from '@/components/ui/PaperTexture';
+import { MW_BORDER, MW_COLORS, MW_FONTS, MW_TYPE } from '@/constants/morgan-theme';
+
 export default function DocsScreen() {
   const insets = useSafeAreaInsets();
   const open = (url: string) => void Linking.openURL(url);
@@ -14,11 +15,12 @@ export default function DocsScreen() {
       contentContainerStyle={[
         styles.content,
         {
-          paddingTop: insets.top + 16,
+          paddingTop: insets.top + 20,
           paddingBottom: Math.max(insets.bottom + 20, 36),
         },
-      ]}
-    >
+      ]}>
+      <PaperTextureOverlay />
+      <View style={styles.rule} />
       <Text style={styles.kicker}>MORGAN`S WALLET</Text>
       <Text style={styles.title}>Workshop Notes & References</Text>
       <Text style={styles.sub}>Quick links you can use during your SDK documentation workshop.</Text>
@@ -73,37 +75,80 @@ function Card({ title, body, children }: { title: string; body: string; children
 
 function LinkButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.linkButton} onPress={onPress}>
-      <Text style={styles.linkText}>{label}</Text>
+    <TouchableOpacity style={styles.linkButton} onPress={onPress} accessibilityRole="button">
+      <Text style={styles.linkText}>{label} →</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: MW_COLORS.background },
-  content: { paddingHorizontal: 20, gap: 14 },
-  kicker: { color: MW_COLORS.gold, fontWeight: '700', letterSpacing: 2, fontSize: 11 },
-  title: { color: MW_COLORS.foreground, fontSize: 28, lineHeight: 34, fontWeight: '800' },
-  sub: { color: MW_COLORS.muted, fontSize: 15, lineHeight: 22, marginBottom: 8 },
+  content: { paddingHorizontal: 20, gap: 20 },
+  rule: {
+    height: MW_BORDER.thick,
+    backgroundColor: MW_COLORS.foreground,
+    marginBottom: 20,
+  },
+  kicker: {
+    color: MW_COLORS.foreground,
+    fontWeight: '600',
+    letterSpacing: 3,
+    fontSize: MW_TYPE.kicker,
+    fontFamily: MW_FONTS.mono,
+  },
+  title: {
+    color: MW_COLORS.foreground,
+    fontSize: MW_TYPE.pageTitle,
+    lineHeight: 38,
+    fontWeight: '700',
+    fontFamily: MW_FONTS.display,
+    letterSpacing: -0.5,
+  },
+  sub: {
+    color: MW_COLORS.mutedForeground,
+    fontSize: MW_TYPE.bodySm,
+    lineHeight: 22,
+    marginBottom: 4,
+    fontFamily: MW_FONTS.body,
+  },
   card: {
-    backgroundColor: MW_COLORS.surface,
-    borderRadius: MW_RADIUS.lg,
+    backgroundColor: MW_COLORS.card,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: MW_COLORS.border,
-    padding: 16,
-    gap: 8,
-    ...MW_SHADOWS.softCard,
+    padding: 18,
+    gap: 10,
   },
-  cardTitle: { color: MW_COLORS.foreground, fontSize: 18, fontWeight: '700' },
-  cardBody: { color: MW_COLORS.muted, fontSize: 14, lineHeight: 20 },
-  mono: { color: MW_COLORS.foreground, fontFamily: 'monospace', fontSize: 12 },
+  cardTitle: {
+    color: MW_COLORS.foreground,
+    fontSize: MW_TYPE.section,
+    fontWeight: '700',
+    fontFamily: MW_FONTS.display,
+  },
+  cardBody: {
+    color: MW_COLORS.mutedForeground,
+    fontSize: MW_TYPE.bodySm,
+    lineHeight: 22,
+    fontFamily: MW_FONTS.body,
+  },
+  mono: {
+    color: MW_COLORS.foreground,
+    fontFamily: MW_FONTS.mono,
+    fontSize: MW_TYPE.mono,
+  },
   linkButton: {
-    backgroundColor: '#141922',
-    borderWidth: 1,
-    borderColor: '#F7931A77',
-    borderRadius: MW_RADIUS.pill,
-    paddingVertical: 12,
+    backgroundColor: MW_COLORS.background,
+    borderWidth: 2,
+    borderColor: MW_COLORS.border,
+    borderRadius: 0,
+    paddingVertical: 14,
     paddingHorizontal: 14,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  linkText: { color: MW_COLORS.foreground, fontWeight: '700' },
+  linkText: {
+    color: MW_COLORS.foreground,
+    fontWeight: '700',
+    fontFamily: MW_FONTS.bodySemi,
+  },
 });

@@ -1,7 +1,10 @@
 import { useGetTransactionList, useGetWallet } from '@chipi-stack/chipi-expo';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+
+import { chipiBaseStyles } from '@/constants/chipi-section-styles';
+import { MW_COLORS } from '@/constants/morgan-theme';
 
 /**
  * Transaction history demo using `useGetTransactionList`.
@@ -37,81 +40,42 @@ export function TransactionListUseGetTransactionListSection() {
   }, [walletAddress, data]);
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.kicker}>Feature: Transaction history</Text>
-      <Text style={styles.hook}>Hook: useGetTransactionList (address from useGetWallet)</Text>
+    <View style={chipiBaseStyles.section}>
+      <Text style={chipiBaseStyles.kicker}>Feature: Transaction history</Text>
+      <Text style={chipiBaseStyles.hookTight}>Hook: useGetTransactionList (address from useGetWallet)</Text>
 
       {!walletAddress && !walletLoading ? (
-        <View style={styles.card}>
-          <Text style={styles.muted}>Create or fetch a wallet first to load transactions.</Text>
-          <TouchableOpacity style={styles.button} onPress={() => void refetchWallet()}>
-            <Text style={styles.buttonText}>Refetch wallet</Text>
+        <View style={chipiBaseStyles.card}>
+          <Text style={chipiBaseStyles.muted}>Create or fetch a wallet first to load transactions.</Text>
+          <TouchableOpacity style={[chipiBaseStyles.secondaryButton, { marginTop: 8 }]} onPress={() => void refetchWallet()} accessibilityRole="button">
+            <Text style={chipiBaseStyles.secondaryButtonText}>Refetch wallet</Text>
           </TouchableOpacity>
         </View>
       ) : null}
 
       {walletLoading || (isLoading && Boolean(walletAddress)) ? (
-        <ActivityIndicator style={styles.spinner} />
+        <ActivityIndicator style={chipiBaseStyles.spinner} color={MW_COLORS.foreground} />
       ) : error ? (
-        <Text style={styles.error}>{error.message}</Text>
+        <Text style={chipiBaseStyles.error}>{error.message}</Text>
       ) : data ? (
-        <View style={styles.card}>
-          <Text style={styles.meta}>
+        <View style={chipiBaseStyles.card}>
+          <Text style={chipiBaseStyles.meta}>
             {data.data?.length ?? 0} transaction(s) on this page
           </Text>
           {(data.data ?? []).slice(0, 5).map((tx) => (
-            <View key={tx.id} style={styles.txRow}>
-              <Text style={styles.txType}>{tx.type}</Text>
-              <Text style={styles.txStatus}>{tx.status}</Text>
-              <Text style={styles.mono} numberOfLines={1}>
+            <View key={tx.id} style={chipiBaseStyles.txRow}>
+              <Text style={chipiBaseStyles.txType}>{tx.type}</Text>
+              <Text style={chipiBaseStyles.txStatus}>{tx.status}</Text>
+              <Text style={chipiBaseStyles.mono} numberOfLines={1}>
                 {tx.transactionHash}
               </Text>
             </View>
           ))}
-          <TouchableOpacity style={styles.button} onPress={() => void refetch()}>
-            <Text style={styles.buttonText}>Refetch list</Text>
+          <TouchableOpacity style={[chipiBaseStyles.secondaryButton, { marginTop: 8 }]} onPress={() => void refetch()} accessibilityRole="button">
+            <Text style={chipiBaseStyles.secondaryButtonText}>Refetch list</Text>
           </TouchableOpacity>
         </View>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#0F1115',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-  },
-  kicker: { fontSize: 12, fontWeight: '700', color: '#F7931A', marginBottom: 4, letterSpacing: 1 },
-  hook: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 12 },
-  muted: { color: '#94A3B8' },
-  spinner: { marginVertical: 12 },
-  error: { color: '#F87171' },
-  card: { gap: 8 },
-  meta: { fontSize: 13, color: '#94A3B8' },
-  txRow: {
-    padding: 10,
-    backgroundColor: '#090B10',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-    gap: 4,
-  },
-  txType: { fontWeight: '700', color: '#FFFFFF' },
-  txStatus: { fontSize: 12, color: '#F7931A' },
-  mono: { fontFamily: 'monospace', fontSize: 11, color: '#E2E8F0' },
-  button: {
-    marginTop: 8,
-    backgroundColor: '#141922',
-    borderRadius: 999,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F7931A80',
-  },
-  buttonText: { color: '#fff', fontWeight: '700' },
-});

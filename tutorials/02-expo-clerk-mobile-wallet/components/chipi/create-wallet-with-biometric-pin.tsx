@@ -5,6 +5,9 @@ import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SimpleInput } from '@/components/ui/SimpleInput';
+import { chipiBaseStyles } from '@/constants/chipi-section-styles';
+import { MW_COLORS, MW_FONTS, MW_TYPE } from '@/constants/morgan-theme';
+
 import { setPinStorage, setWalletStorage } from '@/utils/secureStorage';
 
 /**
@@ -58,10 +61,10 @@ export function CreateWalletWithBiometricPinSection() {
   };
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.kicker}>Feature: Create wallet (biometric-gated PIN)</Text>
-      <Text style={styles.hook}>Hook: useCreateWallet · SecureStore requireAuthentication for PIN</Text>
-      <Text style={styles.subtitle}>PIN encrypts the wallet; retrieving the PIN prompts biometrics.</Text>
+    <View style={chipiBaseStyles.section}>
+      <Text style={chipiBaseStyles.kicker}>Feature: Create wallet (biometric-gated PIN)</Text>
+      <Text style={chipiBaseStyles.hook}>Hook: useCreateWallet · SecureStore requireAuthentication for PIN</Text>
+      <Text style={chipiBaseStyles.subtitle}>PIN encrypts the wallet; retrieving the PIN prompts biometrics.</Text>
 
       <SimpleInput
         placeholder="Enter your PIN (min 4 digits)"
@@ -71,7 +74,7 @@ export function CreateWalletWithBiometricPinSection() {
         maxLength={6}
       />
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={chipiBaseStyles.error}>{error}</Text> : null}
 
       <PrimaryButton
         title={isLoading ? 'Creating...' : 'Create Wallet'}
@@ -87,7 +90,7 @@ export function CreateWalletWithBiometricPinSection() {
               Starkscan →
             </Text>
           </View>
-          <Text style={styles.mono} numberOfLines={2}>
+          <Text style={chipiBaseStyles.mono} numberOfLines={2}>
             {walletAddress}
           </Text>
         </View>
@@ -97,25 +100,13 @@ export function CreateWalletWithBiometricPinSection() {
 }
 
 const styles = StyleSheet.create({
-  section: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#0F1115',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-  },
-  kicker: { fontSize: 12, fontWeight: '700', color: '#F7931A', marginBottom: 4, letterSpacing: 1 },
-  hook: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#94A3B8', marginBottom: 12 },
-  errorText: { color: '#F87171', fontSize: 14, marginTop: 8 },
   walletDetails: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#090B10',
-    borderRadius: 8,
+    backgroundColor: MW_COLORS.muted,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: MW_COLORS.border,
   },
   detailHeader: {
     flexDirection: 'row',
@@ -123,7 +114,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  detailTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  link: { fontSize: 14, color: '#F7931A', fontWeight: '700' },
-  mono: { fontFamily: 'monospace', fontSize: 13, color: '#E2E8F0' },
+  detailTitle: {
+    fontSize: MW_TYPE.section,
+    fontWeight: '700',
+    color: MW_COLORS.foreground,
+    fontFamily: MW_FONTS.display,
+  },
+  link: {
+    fontSize: MW_TYPE.bodySm,
+    color: MW_COLORS.foreground,
+    fontWeight: '700',
+    fontFamily: MW_FONTS.bodySemi,
+    textDecorationLine: 'underline',
+  },
 });
