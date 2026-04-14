@@ -72,5 +72,5 @@
    - **Track:** <!-- chipi-pay/sdks#XXX or chipi-pay/chipi-back#XXX — link when filed -->
 
 ## Recording
-
-- Walkthrough: https://www.youtube.com/watch?v=VZj5UIa-CCA&t=9s
+- [x] Full walkthrough recorded (25 min)
+- [x] Long video link (25 min): https://www.youtube.com/watch?v=VZj5UIa-CCA
