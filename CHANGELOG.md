@@ -2,6 +2,96 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.4.0 (2026-05-11)
+
+### `@chipi-stack/types`
+
+- New `SkuProvider` union (`"TET" | "CHIPI"`).
+- `GetSkuListQuery` extended with `chipiCategory`, `carrierName`, `locale`. `provider` is now typed as `SkuProvider` (narrowed from `string` — TS-strict callers passing arbitrary strings need to update).
+
+### `@chipi-stack/backend`
+
+- `Currency` is now re-exported as a **value** (previously only as a type). `import { Currency } from "@chipi-stack/backend"` now works at runtime — callers no longer need to add `@chipi-stack/types` as a direct dep just for the enum.
+
+Verified end-to-end against live staging on 2026-05-11. Credit to **Salvador (Medialane)** for the audit that surfaced both gaps.
+
+## v14.3.1 (2026-04-09)
+
+### `@chipi-stack/chipi-expo`
+
+- **Fix:** export `useSyncOnChainTransfers`. The hook shipped in 14.3.0 for `@chipi-stack/chipi-react` but was never re-exported from the Expo package — Expo apps couldn't populate the backend transaction cache for externally received USDC. Pure re-export, no native adapter changes.
+
+### Docs (across all frontend packages)
+
+- Removed `CHIPI_SECRET_KEY` and `CLERK_SECRET_KEY` from Expo `.env` examples. Removed `VITE_CHIPI_SECRET_KEY` from React/Firebase docs (Vite bundles `VITE_`-prefixed vars into the client).
+- Fixed `result.wallet` → `result` in `createWalletAsync` examples (`CreateWalletResponse` is flat).
+- Fixed `wallet.accountAddress` → `wallet.normalizedPublicKey` (no such field as `accountAddress`).
+- Added missing `chain: Chain.STARKNET` to all `createWalletAsync` examples.
+- Realigned passkey examples with mandatory PIN backup (matches the "not recommended" label on passkey-only mode).
+- Expo SDK 55 upgrade step added — `create-expo-app@latest` scaffolds SDK 54.0.33 but `chipi-expo` peer-requires SDK 55+.
+- Dashboard URL: `/configure/api-keys` → `/configure/credentials`.
+
+## v14.3.0 (2026-04-03)
+
+### Features
+
+- **Passkey dual-key**: `usePasskey: true` + mandatory PIN backup on `useCreateWallet` and `useTransfer`.
+- **`onPinRequired`** callback on `useTransfer` — automatic PIN fallback when passkey fails.
+- **`useMigrateWalletToPasskey`** — adds passkey backup to an existing PIN-only wallet, persists the encryption update to the backend.
+- **`useSyncOnChainTransfers`** — Voyager read-through cache for externally received USDC.
+- **`useX402Payment`** — x402 payment protocol support.
+- **Expo dual-key**: Face ID / Touch ID primary + PIN backup, same API as web.
+- **`@chipi-stack/chipi-passkey`** (independent, → `2.1.0`):
+  - PRF fix (blocks silent PBKDF2 fallback that caused decryption failures after page reload).
+  - `verifyWalletPasskeyDetailed()` for diagnosing key mismatches.
+  - Credential recovery from backend.
+- **Custom class hash** support in paymaster + transaction execution.
+- **x402 sugar layer** — DX convenience wrappers + session-txHash support.
+
+### Fixes
+
+- PRF silent fallback bug.
+- Credential matching against target ID (not stale localStorage).
+- Expo: only return null on biometric denial; rethrow other errors.
+- Sponsored-tx failure flag reset + null-signature-element guards.
+- Wallet-type-based class hash in paymaster adapter.
+
+## v14.2.1 (2026-03-31)
+
+Patch release — dependency bumps across the fixed-version group.
+
+## v14.2.0 (2026-03-25)
+
+### Spending Policy Management
+
+Wraps the [`ISessionSpendingPolicy`](https://github.com/chipi-pay/sessions-smart-contract) contract interface so developers can set per-token spending caps on session keys. Based on [SNIP-163](https://github.com/starknet-io/SNIPs/pull/163).
+
+**CHIPI v33 wallet contract** enforces limits automatically during transaction execution. v33 has been validated end-to-end with on-chain smoke tests; v29 wallets must [upgrade](https://docs.chipipay.com/sdk/guides/wallet-upgrades) before using SpendingPolicy entrypoints.
+
+### New methods
+
+`@chipi-stack/backend`:
+- `sdk.sessions.setSpendingPolicy()` — set per-call and rolling-window limits for a token.
+- `sdk.sessions.getSpendingPolicy()` — query current spend and limits (read-only, no gas).
+- `sdk.sessions.removeSpendingPolicy()` — remove spending caps for a token.
+
+`@chipi-stack/chipi-react`, `@chipi-stack/nextjs`:
+- `useChipiSession` now returns `setSpendingPolicy`, `getSpendingPolicy`, `removeSpendingPolicy` plus their `isSetting…` / `isRemoving…` loading flags.
+
+`@chipi-stack/types`:
+- `SpendingPolicyConfig`, `SpendingPolicyData`, `SetSpendingPolicyParams`, `GetSpendingPolicyParams`, `RemoveSpendingPolicyParams`.
+
+`@chipi-stack/x402`:
+- Re-exports all spending policy types for agent payment developers.
+
+### Validation
+
+- Token address must not be empty.
+- `windowSeconds` must be a positive integer within u64 range.
+- `maxPerCall` and `maxPerWindow` must fit in u256.
+- `maxPerCall` cannot exceed `maxPerWindow`.
+- Wallet must be CHIPI type (backward compatible: omitted `walletType` defaults to CHIPI).
+
 ## v14.1.0 (2026-03-18)
 
 ### All framework packages
@@ -41,16 +131,21 @@ All notable changes to the `@chipi-stack` SDK packages are documented here.
 - Dual payment flow: standard wallet (SNIP-12) + session payments
 - Zero fees, gasless via paymaster, non-custodial
 
-## v2.0.0 (2026-03-13)
+## Independent packages
 
-### @chipi-stack/chipi-passkey
+### `@chipi-stack/chipi-passkey`
 
-- Major version bump for WebAuthn passkey utilities
-- Biometric login and seedless key management
+- **v2.1.0** (2026-04-03) — Shipped alongside framework `v14.3.0`. PRF silent-fallback fix, `verifyWalletPasskeyDetailed()`, credential recovery from backend, dual-key support across web + Expo. See [v14.3.0](#v1430-2026-04-03) for the full feature list — chipi-passkey is the underlying engine.
+- **v2.0.0** (2026-03-13) — Major version bump for WebAuthn passkey utilities. Biometric login and seedless key management.
 
-## v0.3.0 (2026-03-13)
+### `@chipi-stack/core`
 
-### @chipi-stack/core
+- **v0.3.1** (2026-04-09) — CI alignment patch. starknet unified at `9.2.1` (was split between 7.6.4 and 9.2.1); `@simplewebauthn/browser` upgraded to v13.3.0; React peerDep `>=18.0.0`; Node engine `>=20.19.0`; Expo peerDep `>=55.0.0`; 31 vulnerabilities fixed via next devDep bump.
+- **v0.3.0** (2026-03-13) — Core primitives: TxBuilder, Amount, SignerAdapter, TokenRegistry. Account abstraction foundation for all other packages.
 
-- Core primitives: TxBuilder, Amount, SignerAdapter, TokenRegistry
-- Account abstraction foundation for all other packages
+## Python SDK (`chipi-stack` on PyPI)
+
+The Python package is versioned independently and ships via PyPI.
+
+- **v2.1.0** (2026-05-11) — **Bill payments support.** New `purchase_sku` / `apurchase_sku` + `get_sku_purchase` / `aget_sku_purchase` methods on `ChipiSDK`, wrapping `POST /sku-purchases`. New `CreateSkuPurchaseParams` model mirroring the Node SDK contract. New `Currency` enum (`MXN` / `USD`) added to `chipi_sdk.models.core` — was missing entirely. Fixes the previously broken `create_sku_transaction` which posted to a non-existent `/sku-transactions` endpoint with the wrong param shape.
+- **v2.0.0** (2026-04-23) — **Renamed from `chipi-python` to `chipi-stack`**, matching the `@chipi-stack/*` npm scope. Pin imports remain `from chipi_sdk import ...`. Includes the flat `CreateWalletResponse` / `GetWalletResponse` shape alignment with the backend (no more nested `.wallet`).
