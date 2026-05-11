@@ -15,6 +15,8 @@ All notable changes to the `@chipi-stack` SDK packages are documented here.
 
 Verified end-to-end against live staging on 2026-05-11. Credit to **Salvador (Medialane)** for the audit that surfaced both gaps.
 
+_Sources_: [`sdks#209`](https://github.com/chipi-pay/sdks/pull/209) (feature), [`sdks#224`](https://github.com/chipi-pay/sdks/pull/224) (changeset), [`sdks#225`](https://github.com/chipi-pay/sdks/pull/225) (version-packages); chipi-back [`#235`](https://github.com/chipi-pay/chipi-back/pull/235).
+
 ## v14.3.1 (2026-04-09)
 
 ### `@chipi-stack/chipi-expo`
@@ -30,6 +32,8 @@ Verified end-to-end against live staging on 2026-05-11. Credit to **Salvador (Me
 - Realigned passkey examples with mandatory PIN backup (matches the "not recommended" label on passkey-only mode).
 - Expo SDK 55 upgrade step added — `create-expo-app@latest` scaffolds SDK 54.0.33 but `chipi-expo` peer-requires SDK 55+.
 - Dashboard URL: `/configure/api-keys` → `/configure/credentials`.
+
+_Sources_: `chore: version packages` commit [`3d3d481`](https://github.com/chipi-pay/sdks/commit/3d3d481); PRs [`sdks#192`](https://github.com/chipi-pay/sdks/pull/192), [`sdks#193`](https://github.com/chipi-pay/sdks/pull/193).
 
 ## v14.3.0 (2026-04-03)
 
@@ -56,9 +60,13 @@ Verified end-to-end against live staging on 2026-05-11. Credit to **Salvador (Me
 - Sponsored-tx failure flag reset + null-signature-element guards.
 - Wallet-type-based class hash in paymaster adapter.
 
+_Sources_: `chore: version packages` commit [`60e0dcc`](https://github.com/chipi-pay/sdks/commit/60e0dcc).
+
 ## v14.2.1 (2026-03-31)
 
 Patch release — dependency bumps across the fixed-version group.
+
+_Sources_: `chore: version packages` commit [`f6e2c2b`](https://github.com/chipi-pay/sdks/commit/f6e2c2b).
 
 ## v14.2.0 (2026-03-25)
 
@@ -91,6 +99,8 @@ Wraps the [`ISessionSpendingPolicy`](https://github.com/chipi-pay/sessions-smart
 - `maxPerCall` and `maxPerWindow` must fit in u256.
 - `maxPerCall` cannot exceed `maxPerWindow`.
 - Wallet must be CHIPI type (backward compatible: omitted `walletType` defaults to CHIPI).
+
+_Sources_: `chore: version packages` commit [`a69f704`](https://github.com/chipi-pay/sdks/commit/a69f704).
 
 ## v14.1.0 (2026-03-18)
 
@@ -147,5 +157,5 @@ Wraps the [`ISessionSpendingPolicy`](https://github.com/chipi-pay/sessions-smart
 
 The Python package is versioned independently and ships via PyPI.
 
-- **v2.1.0** (2026-05-11) — **Bill payments support.** New `purchase_sku` / `apurchase_sku` + `get_sku_purchase` / `aget_sku_purchase` methods on `ChipiSDK`, wrapping `POST /sku-purchases`. New `CreateSkuPurchaseParams` model mirroring the Node SDK contract. New `Currency` enum (`MXN` / `USD`) added to `chipi_sdk.models.core` — was missing entirely. Fixes the previously broken `create_sku_transaction` which posted to a non-existent `/sku-transactions` endpoint with the wrong param shape.
-- **v2.0.0** (2026-04-23) — **Renamed from `chipi-python` to `chipi-stack`**, matching the `@chipi-stack/*` npm scope. Pin imports remain `from chipi_sdk import ...`. Includes the flat `CreateWalletResponse` / `GetWalletResponse` shape alignment with the backend (no more nested `.wallet`).
+- **v2.1.0** (2026-05-11) — **Bill payments support.** New `purchase_sku` / `apurchase_sku` + `get_sku_purchase` / `aget_sku_purchase` methods on `ChipiSDK`, wrapping `POST /sku-purchases`. New `CreateSkuPurchaseParams` model mirroring the Node SDK contract. New `Currency` enum (`MXN` / `USD`) added to `chipi_sdk.models.core` — was missing entirely. Fixes the previously broken `create_sku_transaction` which posted to a non-existent `/sku-transactions` endpoint with the wrong param shape. _Sources_: [`sdks#221`](https://github.com/chipi-pay/sdks/pull/221), [`sdks#223`](https://github.com/chipi-pay/sdks/pull/223).
+- **v2.0.0** (2026-04-23) — **Renamed from `chipi-python` to `chipi-stack`**, matching the `@chipi-stack/*` npm scope. Pin imports remain `from chipi_sdk import ...`. Includes the flat `CreateWalletResponse` / `GetWalletResponse` shape alignment with the backend (no more nested `.wallet`). _Sources_: [`sdks#200`](https://github.com/chipi-pay/sdks/pull/200), [`sdks#201`](https://github.com/chipi-pay/sdks/pull/201).
