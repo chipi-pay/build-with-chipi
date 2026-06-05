@@ -2,6 +2,20 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.8.0 (2026-06-05)
+
+### `@chipi-stack/chipi-react`
+
+- New tree-shakeable subpath **`@chipi-stack/chipi-react/multisig`** — SHHH multisig governance: propose any contract action (or a vote), collect N-of-M approvals, execute.
+  - `defineActions` + the `ActionTemplate` engine and felt encoders (`toFelt`, `u256`, `amountToBase`); built-in `voteTemplate`.
+  - Signer-/transport-agnostic OutsideExecution core: `buildActionProposal`, `signActionApproval`, `assembleActionExecuteCalldata`.
+  - `useProposeAction` + `useTreasuryProposals` hooks, parameterized by an injectable `MultisigTransport` + `MultisigSigner` (the host owns the UI). Experimental — the API may change.
+- Additive; no existing exports changed. The rest of the fixed version group (`types`, `shared`, `backend`, `nextjs`, `chipi-expo`, `x402`) bumps to 14.8.0 version-only.
+
+_Sources_: [`sdks#322`](https://github.com/chipi-pay/sdks/pull/322), [`sdks#323`](https://github.com/chipi-pay/sdks/pull/323), [`sdks#324`](https://github.com/chipi-pay/sdks/pull/324), [`sdks#325`](https://github.com/chipi-pay/sdks/pull/325) (release).
+
+> **Note:** v14.5.0–v14.7.0 (the SHHH V8.4 wave) shipped but are not yet itemized here; see the per-package `CHANGELOG.md` in the [sdks repo](https://github.com/chipi-pay/sdks) for those.
+
 ## v14.4.0 (2026-05-11)
 
 ### `@chipi-stack/types`
