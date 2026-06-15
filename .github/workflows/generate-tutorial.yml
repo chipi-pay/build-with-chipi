@@ -251,7 +251,7 @@ jobs:
             let validation = `# ${template.title} — Validation Report\n\n`;
             validation += `- **Framework:** ${framework}\n`;
             validation += `- **Auth Provider:** ${auth}\n`;
-            validation += `- **SDK Version:** <!-- run: npm list @chipi-stack/nextjs or pip show chipi-python -->\n`;
+            validation += `- **SDK Version:** <!-- run: npm list @chipi-stack/nextjs or pip show chipi-stack -->\n`;
             validation += `- **Date:** <!-- fill in -->\n`;
             validation += `- **Tester:** @YrandaNova\n\n`;
 
