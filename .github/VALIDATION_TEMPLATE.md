@@ -4,7 +4,7 @@
 **Date:** [YYYY-MM-DD]
 **Framework:** [Next.js / React / Expo / Python]
 **Auth Provider:** [Clerk / Firebase / Supabase / Better Auth / Custom]
-**SDK Version:** [@chipi-stack/nextjs@X.X.X or chipi-python@X.X.X]
+**SDK Version:** [@chipi-stack/nextjs@X.X.X or chipi-stack@X.X.X]
 **Tutorial Issue:** [link to GitHub issue]
 
 ---
