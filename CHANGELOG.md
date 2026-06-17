@@ -2,6 +2,24 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.9.0 (2026-06-16)
+
+### `@chipi-stack/chipi-react`
+
+- **Embeddable multisig governance UI** on the `@chipi-stack/chipi-react/multisig` subpath: `<ProposeAction>` (template-driven propose dialog with a live "what this does" preview), `<Approvals>` (pending/recent list with Approve/Execute and a `renderContext` slot), and `<ApprovalInbox>` (cross-treasury "what needs me", mobile-first). Themeable via CSS-var tokens, zero Tailwind/CSS-import requirement, tree-shakeable. Built on the existing `useProposeAction` / `useTreasuryProposals` hooks — transports/signers inject as before.
+- **Risk tiers** — `ActionTemplate.risk?: "ROUTINE" | "SENSITIVE"` flows through `createProposal`; `TreasuryProposal.risk` is returned in lists and `<Approvals>` shows a "Sensitive" chip (the backend applies the treasury's per-tier quorum policy).
+- **Agent-proposer affordance** — `<Approvals>` / `<ApprovalInbox>` accept `isAgentProposal` + `agentLabel`, rendering an escalated agent proposal as "{label} wants: {title}" with an Agent chip.
+- **Fix (H3):** `buildExecuteCalldata` now wraps exactly `requiredApprovals` signatures (lowest owner indices) instead of every collected one — prevents an extra/stale signature reverting the V2_THRESHOLD execute.
+
+### `@chipi-stack/backend`
+
+- **`ShhhAccount`** — an ergonomic drop-in adapter for signing as a SHHH V8.4 owner from a raw (exported) STARK private key. SHHH accounts have `__validate__` disabled, so the standard `new Account(...).execute()` path doesn't work; `ShhhAccount` hides the `execute_from_outside_v2` plumbing so a key holder can write `const { transactionHash } = await account.execute(calls)`. Pairs with the wallet's "export private key" self-custody flow.
+- **Owner-pubkey formatters** — `eip191OwnerPubkeyParam`, `ed25519OwnerPubkeyParam`, `webauthnOwnerPubkeyParam` produce the kind-specific `ownerPubkey` string the treasury coordination endpoints expect (`sdk.treasury.forTreasury({ ownerPubkey })`). The coordinate kinds (WebAuthn/EIP-191) take the full `"x,y"` BE coordinates; Ed25519 takes `"low,high"` LE u128 halves — not the 4-felt `*PubkeyFelts` form.
+
+- Additive; no existing exports changed. The rest of the fixed version group (`types`, `shared`, `nextjs`, `chipi-expo`, `x402`) bumps to 14.9.0 version-only. `core` (0.3.1) and `chipi-passkey` (2.2.0) are unchanged.
+
+_Sources_: [`sdks#328`](https://github.com/chipi-pay/sdks/pull/328), [`sdks#329`](https://github.com/chipi-pay/sdks/pull/329), [`sdks#330`](https://github.com/chipi-pay/sdks/pull/330), [`sdks#331`](https://github.com/chipi-pay/sdks/pull/331), [`sdks#332`](https://github.com/chipi-pay/sdks/pull/332), [`sdks#350`](https://github.com/chipi-pay/sdks/pull/350), [`sdks#351`](https://github.com/chipi-pay/sdks/pull/351).
+
 ## v14.8.0 (2026-06-05)
 
 ### `@chipi-stack/chipi-react`
