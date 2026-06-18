@@ -16,9 +16,18 @@ All notable changes to the `@chipi-stack` SDK packages are documented here.
 - **`ShhhAccount`** — an ergonomic drop-in adapter for signing as a SHHH V8.4 owner from a raw (exported) STARK private key. SHHH accounts have `__validate__` disabled, so the standard `new Account(...).execute()` path doesn't work; `ShhhAccount` hides the `execute_from_outside_v2` plumbing so a key holder can write `const { transactionHash } = await account.execute(calls)`. Pairs with the wallet's "export private key" self-custody flow.
 - **Owner-pubkey formatters** — `eip191OwnerPubkeyParam`, `ed25519OwnerPubkeyParam`, `webauthnOwnerPubkeyParam` produce the kind-specific `ownerPubkey` string the treasury coordination endpoints expect (`sdk.treasury.forTreasury({ ownerPubkey })`). The coordinate kinds (WebAuthn/EIP-191) take the full `"x,y"` BE coordinates; Ed25519 takes `"low,high"` LE u128 halves — not the 4-felt `*PubkeyFelts` form.
 
+- **Fix (C1) — gasless SHHH transfer reliability:** `executeTransaction` / `transfer` / `callAnyContract` now resolve `walletType` from the on-chain class hash when the caller omits it. A SHHH wallet passed without `walletType` previously defaulted to `READY` and was estimated as a direct sender, which panicked `C1: invalid tx version` and failed the transfer; it now resolves to SHHH and routes through the OutsideExecution path. CHIPI/READY behavior is unchanged. One extra RPC read, only when `walletType` is omitted.
+
 - Additive; no existing exports changed. The rest of the fixed version group (`types`, `shared`, `nextjs`, `chipi-expo`, `x402`) bumps to 14.9.0 version-only. `core` (0.3.1) and `chipi-passkey` (2.2.0) are unchanged.
 
-_Sources_: [`sdks#328`](https://github.com/chipi-pay/sdks/pull/328), [`sdks#329`](https://github.com/chipi-pay/sdks/pull/329), [`sdks#330`](https://github.com/chipi-pay/sdks/pull/330), [`sdks#331`](https://github.com/chipi-pay/sdks/pull/331), [`sdks#332`](https://github.com/chipi-pay/sdks/pull/332), [`sdks#350`](https://github.com/chipi-pay/sdks/pull/350), [`sdks#351`](https://github.com/chipi-pay/sdks/pull/351).
+<!-- Intentionally NOT documented in 14.9.0: the get-starknet dApp connector
+     (createChipiWindowObject / ChipiInjector / useChipiWalletObject, sdks#352)
+     publishes in this version but is a Phase-0 primitive with no end-to-end
+     walletv2 integration yet. Held back from the public changelog until the
+     consumer-facing "Connect with Chipi" surface ships, to avoid pointing
+     integrators at a half-built path. Flip this when walletv2 integrates it. -->
+
+_Sources_: [`sdks#328`](https://github.com/chipi-pay/sdks/pull/328), [`sdks#329`](https://github.com/chipi-pay/sdks/pull/329), [`sdks#330`](https://github.com/chipi-pay/sdks/pull/330), [`sdks#331`](https://github.com/chipi-pay/sdks/pull/331), [`sdks#332`](https://github.com/chipi-pay/sdks/pull/332), [`sdks#350`](https://github.com/chipi-pay/sdks/pull/350), [`sdks#351`](https://github.com/chipi-pay/sdks/pull/351), [`sdks#356`](https://github.com/chipi-pay/sdks/pull/356).
 
 ## v14.8.0 (2026-06-05)
 
