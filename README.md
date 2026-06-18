@@ -17,6 +17,7 @@ Developer hub for **@chipi-stack** — the SDK suite for building gasless Starkn
 | [`@chipi-stack/chipi-passkey`](https://www.npmjs.com/package/@chipi-stack/chipi-passkey) | ![npm](https://img.shields.io/npm/v/@chipi-stack/chipi-passkey) | WebAuthn passkey auth — biometric login, seedless key management |
 | [`@chipi-stack/types`](https://www.npmjs.com/package/@chipi-stack/types) | ![npm](https://img.shields.io/npm/v/@chipi-stack/types) | Shared TypeScript type definitions |
 | [`@chipi-stack/shared`](https://www.npmjs.com/package/@chipi-stack/shared) | ![npm](https://img.shields.io/npm/v/@chipi-stack/shared) | Shared utilities, constants, and helpers |
+| [`@chipi-stack/starknet-connector`](https://www.npmjs.com/package/@chipi-stack/starknet-connector) | ![npm](https://img.shields.io/npm/v/@chipi-stack/starknet-connector) | "Connect with Chipi" — a starknet-react connector so any Starknet dApp connects to a Chipi wallet (passkey, gasless, no extension) |
 
 ## What you can build
 
@@ -55,6 +56,16 @@ const tx = await chipi.transferToken({
   tokenAddress: "USDC",
 });
 ```
+
+## Tutorials
+
+Runnable, end-to-end examples in [`tutorials/`](./tutorials):
+
+| # | Tutorial | What it shows |
+|---|----------|---------------|
+| 01 | [Next.js + Clerk wallet](./tutorials/01-nextjs-clerk-wallet) | A gasless web wallet with passkey auth via Clerk |
+| 02 | [Expo + Clerk mobile wallet](./tutorials/02-expo-clerk-mobile-wallet) | The same wallet as a React Native / Expo mobile app |
+| 03 | [Connect with Chipi](./tutorials/03-connect-with-chipi) | A Starknet **dApp** that connects to Chipi wallets — one-line starknet-react connector, gasless signing |
 
 ## Documentation
 
