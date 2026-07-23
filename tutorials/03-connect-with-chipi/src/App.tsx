@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
+import { useEffect, useState } from "react";
+import { useAccount, useConnect, useDisconnect, type Connector } from "@starknet-react/core";
+import "./App.css";
 
 // A minimal SNIP-12 (revision 1) message to prove signTypedData round-trips.
 const TYPED_DATA = {
@@ -21,13 +22,70 @@ const TYPED_DATA = {
 // execute round-trips without moving funds.
 const USDC = "0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb";
 
+function prefersDark() {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+}
+
+// Connector icons are either a plain string or a {dark, light} pair
+// (starknet-react's built-in ready()/braavos() ship real official SVGs this
+// way). Connectors that don't set one (e.g. Cartridge) render a monogram
+// instead of a fabricated logo.
+function iconSrc(connector: Connector): string | null {
+  const icon = connector.icon as string | { dark?: string; light?: string } | undefined;
+  if (!icon) return null;
+  if (typeof icon === "string") return icon;
+  return (prefersDark() ? icon.dark : icon.light) ?? icon.light ?? icon.dark ?? null;
+}
+
+function WalletIcon({ connector, size = 40 }: { connector: Connector; size?: number }) {
+  const src = iconSrc(connector);
+  const style = { width: size, height: size };
+  return (
+    <div className="wallet-icon" style={style}>
+      {src ? <img src={src} alt="" /> : connector.name.slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+function short(address: string) {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
 export function App() {
-  const { connect, connectors } = useConnect();
+  const { connect, connector: activeConnector, connectors } = useConnect();
   const { address, account, status } = useAccount();
   const { disconnect } = useDisconnect();
   const [log, setLog] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const add = (s: string) => setLog((l) => [`${s}`, ...l]);
+  const add = (s: string) => setLog((l) => [s, ...l]);
+
+  useEffect(() => {
+    if (status === "connected") setModalOpen(false);
+    if (status !== "connecting") setConnectingId(null);
+  }, [status]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setModalOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modalOpen]);
+
+  const onConnect = (c: Connector) => {
+    setConnectingId(c.id);
+    connect({ connector: c });
+  };
+
+  const onCopy = async () => {
+    if (!address) return;
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const onSign = async () => {
     if (!account) return;
@@ -51,73 +109,107 @@ export function App() {
     }
   };
 
-  return (
-    <div style={{ fontFamily: "system-ui", maxWidth: 560, margin: "40px auto", padding: 16 }}>
-      <h1>Connect with Chipi — test dApp</h1>
-      <p style={{ color: "#555" }}>
-        Proves the round-trip against a local walletv2 (<code>VITE_CHIPI_WALLET_URL</code>).
-      </p>
+  const connectedConnector = activeConnector ?? connectors[0];
 
-      {status !== "connected" ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {connectors.map((c) => {
-            const isAvailable = c.available();
-            return (
-              <button
-                key={c.id}
-                disabled={!isAvailable}
-                onClick={() => connect({ connector: c })}
-                style={{ ...btn, opacity: isAvailable ? 1 : 0.45, cursor: isAvailable ? "pointer" : "not-allowed" }}
-                title={isAvailable ? undefined : `${c.name} isn't installed in this browser`}
-              >
-                {isAvailable ? `Connect with ${c.name}` : `${c.name} (not installed)`}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div>
+  return (
+    <div className="page">
+      <div className="card-stack">
+        <div className="hero">
+          <h1>Connect with Chipi — test dApp</h1>
           <p>
-            <b>Connected:</b> <code>{address}</code>
+            Proves the round-trip against a local walletv2 (<code>VITE_CHIPI_WALLET_URL</code>) alongside
+            Ready, Braavos, and Cartridge — same array, no whitelisting.
           </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={onSign} style={btn}>
-              signTypedData
+        </div>
+
+        <div className="panel">
+          {status !== "connected" ? (
+            <button className="connect-trigger" onClick={() => setModalOpen(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="6" width="20" height="14" rx="3" />
+                <path d="M16 12h.01M2 10h20" />
+              </svg>
+              Connect Wallet
             </button>
-            <button onClick={onExecute} style={btn}>
-              execute (gasless approve 0)
-            </button>
-            <button onClick={() => disconnect()} style={{ ...btn, background: "#eee", color: "#111" }}>
-              Disconnect
-            </button>
+          ) : (
+            <>
+              <div className="account-bar">
+                <div className="account-chip">
+                  <span className="status-dot" />
+                  {connectedConnector && <WalletIcon connector={connectedConnector} />}
+                  <button onClick={() => setAccountMenuOpen((v) => !v)}>{address && short(address)}</button>
+                </div>
+                <div className="action-row" style={{ marginTop: 0 }}>
+                  <button className="btn primary" onClick={onSign}>
+                    signTypedData
+                  </button>
+                  <button className="btn" onClick={onExecute}>
+                    execute (gasless)
+                  </button>
+                </div>
+              </div>
+
+              {accountMenuOpen && (
+                <div className="action-row">
+                  <button className="btn ghost" onClick={onCopy}>
+                    {copied ? "Copied ✓" : "Copy address"}
+                  </button>
+                  <button
+                    className="btn danger"
+                    onClick={() => {
+                      disconnect();
+                      setAccountMenuOpen(false);
+                    }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="log-console">
+            {log.length ? log.join("\n\n") : <span className="empty">— logs —</span>}
+          </div>
+        </div>
+      </div>
+
+      {modalOpen && (
+        <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2>Connect a wallet</h2>
+              <button className="modal-close" onClick={() => setModalOpen(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="wallet-list">
+              {connectors.map((c) => {
+                const isAvailable = c.available();
+                const isConnecting = connectingId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    className="wallet-row"
+                    disabled={!isAvailable || isConnecting}
+                    onClick={() => onConnect(c)}
+                    title={isAvailable ? undefined : `${c.name} isn't installed in this browser`}
+                  >
+                    <WalletIcon connector={c} />
+                    <div className="wallet-meta">
+                      <span className="wallet-name">{c.name}</span>
+                      <span className={`wallet-status ${isAvailable ? "ok" : ""}`}>
+                        {isConnecting ? "Connecting…" : isAvailable ? "Detected" : "Not installed"}
+                      </span>
+                    </div>
+                    {isConnecting && <span className="wallet-spinner" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
-
-      <pre
-        style={{
-          marginTop: 20,
-          background: "#0A172D",
-          color: "#9fe",
-          padding: 12,
-          borderRadius: 8,
-          minHeight: 120,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-all",
-        }}
-      >
-        {log.join("\n\n") || "— logs —"}
-      </pre>
     </div>
   );
 }
-
-const btn: React.CSSProperties = {
-  padding: "10px 16px",
-  borderRadius: 8,
-  border: "2px solid #0A172D",
-  background: "#0A172D",
-  color: "#fff",
-  fontWeight: 700,
-  cursor: "pointer",
-};
