@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@cartridge/connector": "^0.13.16",
-    "@chipi-stack/starknet-connector": "^0.1.4",
+    "@chipi-stack/starknet-connector": "^0.2.0",
     "@starknet-react/chains": "^5.0.0",
     "@starknet-react/core": "^5.0.3",
     "get-starknet-core": "^4.0.0",

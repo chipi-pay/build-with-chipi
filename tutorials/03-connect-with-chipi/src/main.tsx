@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { StarknetConfig, publicProvider, ready, braavos } from "@starknet-react/core";
 import { mainnet } from "@starknet-react/chains";
-import { ChipiConnector } from "@chipi-stack/starknet-connector";
+import { chipi } from "@chipi-stack/starknet-connector";
 import { ControllerConnector } from "@cartridge/connector";
 import { App } from "./App";
 
@@ -19,9 +19,7 @@ const walletUrl = import.meta.env.VITE_CHIPI_WALLET_URL ?? "https://wallet.chipi
 // based like Chipi itself — proof a hosted-wallet-in-popup connector is
 // already an accepted "standard" shape on Starknet, not just an extension one.
 const connectors = [
-  // icon override: the published package's default is stale (pending a
-  // 0.1.5 release); this points at the current brand icon directly.
-  new ChipiConnector({ walletUrl, name: "Chipi", icon: "/chipi-icon.png" }),
+  chipi({ walletUrl, name: "Chipi" }),
   ready(),
   braavos(),
   new ControllerConnector(),
