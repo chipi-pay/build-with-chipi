@@ -18,7 +18,7 @@ const TYPED_DATA = {
   message: { message: "Hello from a test dApp" },
 };
 
-// USDC on Starknet mainnet — a harmless approve(self, 0) to prove a gasless
+// USDC on Starknet mainnet: a harmless approve(self, 0) to prove a gasless
 // execute round-trips without moving funds.
 const USDC = "0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb";
 
@@ -115,10 +115,10 @@ export function App() {
     <div className="page">
       <div className="card-stack">
         <div className="hero">
-          <h1>Connect with Chipi — test dApp</h1>
+          <h1>Connect with Chipi: test dApp</h1>
           <p>
-            Proves the round-trip against a local walletv2 (<code>VITE_CHIPI_WALLET_URL</code>) alongside
-            Ready, Braavos, and Cartridge — same array, no whitelisting.
+            Proves the round-trip against a local walletv2 (<code>VITE_CHIPI_WALLET_URL</code>), in the
+            same connector array as any other standard wallet, no whitelisting.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export function App() {
           )}
 
           <div className="log-console">
-            {log.length ? log.join("\n\n") : <span className="empty">— logs —</span>}
+            {log.length ? log.join("\n\n") : <span className="empty">no logs yet</span>}
           </div>
         </div>
       </div>
