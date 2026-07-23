@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@chipi-stack/starknet-connector": "^0.1.0",
+    "@cartridge/connector": "^0.13.16",
+    "@chipi-stack/starknet-connector": "^0.1.4",
     "@starknet-react/chains": "^5.0.0",
     "@starknet-react/core": "^5.0.3",
     "get-starknet-core": "^4.0.0",
@@ -22,6 +23,8 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^5.7.3",
-    "vite": "^5.4.0"
+    "vite": "^5.4.0",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.6.0"
   }
 }
