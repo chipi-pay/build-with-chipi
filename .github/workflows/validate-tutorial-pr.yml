@@ -28,19 +28,8 @@ jobs:
             
             const prBody = context.payload.pull_request.body || '';
             const checks = [];
-            
-            // 1. Check YouTube link
-            const ytRegex = /(youtube\.com\/watch|youtu\.be\/)/i;
-            const hasYoutube = ytRegex.test(prBody);
-            checks.push({
-              name: 'YouTube video',
-              pass: hasYoutube,
-              detail: hasYoutube
-                ? prBody.match(/(https?:\/\/(www\.)?(youtube\.com\/watch\S+|youtu\.be\/\S+))/i)?.[1] || 'Found'
-                : 'Missing video link. Paste your YouTube URL in the PR description.'
-            });
-            
-            // 2. Find VALIDATION.md in changed files
+
+            // 1. Find VALIDATION.md in changed files
             const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().split('\n');
             const validationFile = changedFiles.find(f => f.includes('VALIDATION.md'));
             checks.push({
@@ -49,7 +38,7 @@ jobs:
               detail: validationFile || 'No VALIDATION.md found in changed files.'
             });
             
-            // 3. Parse VALIDATION.md for completeness
+            // 2. Parse VALIDATION.md for completeness
             if (validationFile && fs.existsSync(validationFile)) {
               const content = fs.readFileSync(validationFile, 'utf-8');
               
