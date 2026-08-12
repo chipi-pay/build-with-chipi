@@ -2,6 +2,39 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.11.0 (unreleased)
+
+### Packaging: CommonJS now works everywhere
+
+`@chipi-stack/core` (0.6.0), `@chipi-stack/starknet-connector` (0.3.0) and `@chipi-stack/x402` shipped ESM-only behind an `exports` map with no `require` condition. Because an `exports` field overrides `main`, every CommonJS resolver failed on them:
+
+```
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: No "exports" main defined in
+  .../node_modules/@chipi-stack/core/package.json
+```
+
+`core` is a runtime dependency of `backend`, `chipi-react` and `nextjs`, so **all three of those failed to load under `require()` too**. All now ship dual ESM + CommonJS.
+
+The trigger was CommonJS *resolution*, not CommonJS *syntax*. An `import` statement inside a `.ts` file still failed under `tsx`, because a package without `"type": "module"` resolves through the CommonJS loader. Bundlers (Next.js, Vite, webpack) pick the `import` condition and were never affected, which is why this only broke standalone server scripts, cron jobs, `tsx`, `ts-node` and Jest.
+
+If you are pinned to an older release, adding `"type": "module"` to the package.json of the script that imports the SDK forces the ESM path and works around it.
+
+No API, runtime or type changes.
+
+### `@chipi-stack/backend`
+
+- **`sdk.treasury.list()`** returns every treasury the secret key's organization owns, so a `treasuryId` can be discovered programmatically instead of pinned in config. Previously `ChipiTreasury` exposed only `forTreasury({ treasuryId })`, and the sole listing endpoint sat behind the dashboard's Clerk session, so a lost id meant a trip to the dashboard. The `sk_` resolves the org server-side, so there is no org id parameter. Options: `page`, `limit` (server clamps to 1..100, default 25), `includeArchived` (default false). Server-only.
+
+  Treasuries are organization-scoped, not user-scoped, so there is no `by-externalUserId` equivalent to the wallets lookup.
+
+  Requires chipi-back's new `GET /v1/treasuries`.
+
+### Upgrade note if you are on 14.8.0 or earlier
+
+**You can delete any manual CHIPI vs SHHH branching in your signing code.** As of **v14.9.0**, `executeTransaction` / `transfer` / `callAnyContract` resolve `walletType` from the on-chain class hash whenever the caller omits it, then route SHHH through the OutsideExecution path automatically.
+
+On 14.8.0 and earlier, an omitted `walletType` defaulted to `READY`, and a SHHH wallet sent down that path reverted on-chain with `C1: invalid tx version`. Apps that worked around it by branching on `wallet.walletType` and calling `executeShhhSponsoredRaw` themselves no longer need to: pass the wallet through the normal path and the SDK routes it. Passing an explicit `walletType` still works and skips the extra RPC read.
+
 ## v14.9.0 (2026-06-16)
 
 ### `@chipi-stack/chipi-react`
