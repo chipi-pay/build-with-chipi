@@ -2,7 +2,7 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.11.0 (unreleased)
+## v14.11.0 (2026-08-12)
 
 ### Packaging: CommonJS now works everywhere
 
