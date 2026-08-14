@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 96cf42ae139f9c0d00c69c7503879edf4a1dbac8 Carlos Castillo <carlos@diosplan.com> 1781485940 -0600	branch: Created from HEAD
+96cf42ae139f9c0d00c69c7503879edf4a1dbac8 d6afffce2eaf06d49405c1c15edc9c64e714260b Carlos Castillo <carlos@diosplan.com> 1781485940 -0600	commit: fix(tutorials): chipi-python → chipi-stack (Python SDK was renamed)
+d6afffce2eaf06d49405c1c15edc9c64e714260b a9983562ab4bfa1089e3480b0a554b30892137f2 Carlos Castillo <carlos@diosplan.com> 1781485971 -0600	commit: fix(tutorials): chipi-python → chipi-stack in VALIDATION template placeholder
