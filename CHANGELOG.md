@@ -2,7 +2,26 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.12.0 (unreleased)
+## v14.12.1 (unreleased)
+
+### `@chipi-stack/shared`
+
+- **Client-side imports are now supported rather than accidental.** `constants/index.ts` read `process.env` at module scope, so importing anything from `shared` (or from `backend`, which re-exports through it) into browser code only worked because bundlers inject a `process.env` shim. Without one, the *import itself* threw before any of our code ran. Those reads are guarded now, and a test fails the build if a bare `process.env` reappears in a browser-bundled module. Server behaviour is byte-identical: a keyless integrator resolves the same endpoint and `STARKNET_RPC_URL` is still honoured.
+
+  This matters most for `waitForTransaction`, which reads a receipt over RPC and needs no secret, so calling it from a browser hook is a legitimate use. Anything needing an `sk_` stays server-only; that split is about the secret, not the runtime.
+
+### Backend API (no package change)
+
+Two additions to `api.chipipay.com` that integrators drive directly:
+
+- **Treasury signer lifecycle via `sk_`.** `invite` / `list` / `revoke` / `mark-added` were dashboard-only, so signer onboarding could not be expressed as an invariant in provisioning code. Enrolling a `GUARDIAN` is the prerequisite for treasury recovery, so this was not merely convenience.
+- **Treasury guardian recovery.** A treasury whose owner devices are lost was permanently dead, and so was everything it controlled. Recovery is authorised by a **guardian's signature verified against on-chain state**, never by an API key or a dashboard session: holding `pk_`, `sk_` and a Chipi session is not enough. Chipi signs nothing, holds no key, and is removable from the path, since `finalize_recovery` is permissionless and `initiate_recovery` can be self-relayed.
+
+  Two limits worth knowing before you rely on it: recovery is **additive** (it adds an owner and removes none, so the threshold is unchanged), and the 7-day `cancel_recovery` veto **needs a surviving owner**, which a 1-of-1 treasury does not have. Get to two owners and enrol guardians before a treasury holds anything meaningful.
+
+  Documented at [Multisig Governance](https://docs.chipipay.com/sdk/guides/multisig-governance).
+
+## v14.12.0 (2026-08-13)
 
 Mostly things integrators were building themselves. If you are on 14.11.0 or earlier, this release deletes code rather than adding it.
 

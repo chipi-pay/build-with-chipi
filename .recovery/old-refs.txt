@@ -1,0 +1,25 @@
+# refs found on disk before recovery (2026-08-05T00:19:38Z)
+# HEAD: ref: refs/heads/main
+refs/heads/feat/connect-with-chipi-tutorial 4804e835747fbc6063f19930e63b848706bc1f77
+refs/heads/docs/changelog-14.8.0-multisig 96cf42ae139f9c0d00c69c7503879edf4a1dbac8
+refs/heads/docs/changelog-v14.2-to-v14.4 31a2b9f5d96db1694aff09b258d936348b9d81f1
+refs/heads/fix/python-pkg-rename a9983562ab4bfa1089e3480b0a554b30892137f2
+refs/heads/fix/tutorial-02-template-v14.3.1 580a0a7271996cd8b3d7f813f8fec9e1fbf7e4d1
+refs/heads/chore/sdk-14.9.0 f12f2502eb32dfacd57900b4d5d849620fcaf1e8
+refs/heads/main 3e5e6dfd6a185f67e53be5cc5e1e149f031ae9fd
+refs/remotes/origin/tutorial/03-python-wallet d138281ce18db55b7837759f43ec3c61ded1e53c
+refs/remotes/origin/tutorial/01-nextjs-clerk 528b2b1f7f984368a8d9af276e112231746ad0a3
+refs/remotes/origin/tutorial/02-expo-clerk 173cd20c35ed02ee40ddc199dfaddef69f959212
+refs/remotes/origin/feat/connect-with-chipi-tutorial 4804e835747fbc6063f19930e63b848706bc1f77
+refs/remotes/origin/feat/qa-automation-workflows a64acef51f7886ab3a674c9f8561b853c09954b5
+refs/remotes/origin/docs/changelog-14.8.0-multisig 96cf42ae139f9c0d00c69c7503879edf4a1dbac8
+refs/remotes/origin/docs/changelog-v14.2-to-v14.4 31a2b9f5d96db1694aff09b258d936348b9d81f1
+refs/remotes/origin/HEAD ref: refs/remotes/origin/main
+refs/remotes/origin/fix/python-pkg-rename a9983562ab4bfa1089e3480b0a554b30892137f2
+refs/remotes/origin/fix/tutorial-02-template-v14.3.1 580a0a7271996cd8b3d7f813f8fec9e1fbf7e4d1
+refs/remotes/origin/fix/ci-workflow-bugs 297ddaf0918319de6a48b6443c901324463288c0
+refs/remotes/origin/fix/tutorial-03-chipi-stack c40b3a42cee2c7bf1e1bb3146a3c612898d8cfcb
+refs/remotes/origin/fix/yaml-parsing 38331203baeb0d71e3233d84d49707cfc96e3352
+refs/remotes/origin/chore/sdk-14.9.0 f12f2502eb32dfacd57900b4d5d849620fcaf1e8
+refs/remotes/origin/02-expo-clerk-pr-desc 173cd20c35ed02ee40ddc199dfaddef69f959212
+refs/remotes/origin/main 3e5e6dfd6a185f67e53be5cc5e1e149f031ae9fd
