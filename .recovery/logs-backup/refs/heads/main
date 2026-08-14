@@ -1,6 +1,0 @@
-0000000000000000000000000000000000000000 40879f74bdaba0a55535def6f50ab31ff2e49386 Carlos Castillo <carlos@diosplan.com> 1774091443 +0800	commit (initial): Initial commit: developer hub with issue templates, changelog, and package matrix
-40879f74bdaba0a55535def6f50ab31ff2e49386 e70d628fca0dd428179893945f6931726c115635 Carlos Castillo <carlos@diosplan.com> 1774092606 +0800	commit: fix: accurate CHANGELOG versions — v14.1.0 reflects actual shipped changes
-e70d628fca0dd428179893945f6931726c115635 235663d27e85d51861c2a1d2349079ae6ece1eb7 Carlos Castillo <carlos@diosplan.com> 1775723398 +0800	pull origin main --quiet: Fast-forward
-235663d27e85d51861c2a1d2349079ae6ece1eb7 580a0a7271996cd8b3d7f813f8fec9e1fbf7e4d1 Carlos Castillo <carlos@diosplan.com> 1775723454 +0800	commit: chore: update Tutorial 02 template for v14.3.1
-580a0a7271996cd8b3d7f813f8fec9e1fbf7e4d1 a03eeb9b311ab834492c802dd3efdd4492d836a8 Carlos Castillo <carlos@diosplan.com> 1778499171 -0600	pull origin main: Fast-forward
-a03eeb9b311ab834492c802dd3efdd4492d836a8 3e5e6dfd6a185f67e53be5cc5e1e149f031ae9fd Carlos Castillo <carlos@diosplan.com> 1784851126 -0600	pull -q origin main: Fast-forward
