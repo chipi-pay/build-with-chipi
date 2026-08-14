@@ -19,3 +19,5 @@
 
 # OS/editor junk
 .DS_Store
+# Local git-forensics artifacts from the 2026-08 backup recovery. Never committed.
+.recovery/
