@@ -2,6 +2,28 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.12.0 (unreleased)
+
+Mostly things integrators were building themselves. If you are on 14.11.0 or earlier, this release deletes code rather than adding it.
+
+### `@chipi-stack/backend`
+
+- **`waitForTransaction`** resolves the hash every gasless write returns: did it succeed, and what did it emit. A **revert comes back as a result** (`success: false` plus `revertReason`), never a throw, because a revert is an outcome you branch on. Only a timeout or transport failure throws, since that is the case where retrying is correct. Those are the two ways a hand-rolled polling loop goes wrong in a money flow: a revert read as success double-credits a ledger, a timeout read as failure strands a transfer that later confirms. Events come back raw for you to decode against your own ABI.
+- **`sdk.treasury.getPolicy()` / `setPolicy()`** set the risk-tier quorums, so `borrow` can demand more signatures than `repay` without touching the wallet's on-chain threshold. Previously dashboard-only, so an integrator driving governance from their own server could see a quorum applied but never choose it. An omitted tier is unchanged; an explicit `null` clears it. A quorum can only **raise** `requiredApprovals` above the on-chain threshold, which stays the hard floor.
+
+### `@chipi-stack/chipi-react` and `@chipi-stack/types`
+
+- **`credentialId`** on `useCallAnyContract`, `useApprove` and `useTransfer` scopes the WebAuthn prompt to one credential. Needed when a user holds several Chipi credentials on one device (a reset wallet, a per-entity wallet), where the unscoped prompt can resolve to the wrong credential and derive a key for the wrong wallet. Previously this meant bypassing the hooks entirely and supplying a custom `PasskeyAdapter`. Omitting it reproduces today's prompt exactly, and `credentialId` never reaches the API.
+
+### `@chipi-stack/shared`
+
+- **Ordered RPC chain with transport-level failover**, with Starkscan as an opt-in primary. Nothing changes if you do not set `STARKSCAN_API_KEY`: the primary endpoint stays byte-identical and the SDK simply retries the next endpoint instead of failing when one is unreachable. `waitForTransaction` rides this chain, since reading a receipt is idempotent.
+
+### Also in this release
+
+- Treasury **archive now refuses while proposals are still open** rather than silently stranding an already-approved payment. Archiving blocks execute for the whole treasury, including proposals that already reached quorum, so this prevents the worst version of that. Pass `force` to archive anyway.
+- Docs corrections: three pages claimed shipped features did not exist, including the multisig components, which cost at least one integrator a hand-built approval UI. `docs:check` now fails CI when a page says a symbol is absent while the packed types export it.
+
 ## v14.11.0 (2026-08-12)
 
 ### Packaging: CommonJS now works everywhere
