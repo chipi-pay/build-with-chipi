@@ -98,3 +98,20 @@ npm run dev
 - Note: Aligned with the team to publish both formats: a full 25-minute validation walkthrough and shorter ~5-minute cuts for engagement.
 
 
+
+---
+
+## Addendum 2026-09-09 — PRF_UNSUPPORTED handling (chipi-passkey 2.3.0)
+
+**SDK Version:** @chipi-stack/chipi-passkey@2.3.0 (published 2026-09-09)
+
+`create-wallet-with-passkey.tsx` now catches `PRF_UNSUPPORTED` and shows a
+device-cannot-secure-a-wallet message, matching the 2.3.0 require-PRF gate
+(creation throws on non-PRF authenticators instead of silently minting a
+custodial wallet).
+
+Verified: the snippet targets the published 2.3.0 API (error class, `.code`,
+options bag confirmed against the package's source and its 76 passing unit
+tests). NOT yet verified: an end-to-end run of this tutorial on a non-PRF
+device; the original 2026-03-26 report above covers 14.2.1 behaviour and was
+not re-run for this addendum.
