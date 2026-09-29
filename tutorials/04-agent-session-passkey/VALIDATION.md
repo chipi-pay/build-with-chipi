@@ -12,7 +12,8 @@
 | `tsc --noEmit` | PASS | Against the packed 14.14.0 types |
 | `eslint` | PASS | |
 | `next build` | PASS | All routes compile; `/api/agent/*` are dynamic |
-| Mainnet run (hire → decide → stop) | **PENDING** | The validation environment could not reach `api.chipipay.com` or a Starknet RPC. Run it once 14.14.0 is published, then fill in the table below |
+| SDK flow on mainnet (`setupSession` → session-signed call → revoke) | **PASS** | `pnpm smoke:session-setup` in `chipi-pay/sdks`, 2026-09-29, fresh SHHH V8.4 wallet against staging ([run](https://github.com/chipi-pay/sdks/actions/runs/36627421432)) |
+| Mainnet run of this app (hire → decide → stop) | **PENDING** | Needs a browser passkey and the published 14.14.0 packages. Run it once 14.14.0 is on npm, then fill in the table below |
 
 ## SDK surface exercised
 

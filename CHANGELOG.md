@@ -37,7 +37,13 @@ Re-exports `useGuardianRecovery`, `useX402Payment` and `walletSupportsSessions`.
 
 ### Docs
 
-The `/v1/ai/think` pages listed the decision as `hold`, `buy` or `sell`. The API returns `swap`, `supply`, `withdraw` or `hold`; code that branched on `"buy"` never ran.
+- The `/v1/ai/think` pages listed the decision as `hold`, `buy` or `sell`. The API returns `swap`, `supply`, `withdraw` or `hold`; code that branched on `"buy"` never ran.
+- `getSessionData` reads the latest accepted block. Right after a register, execute or revoke, wait with `waitForTransaction(txHash)` first: until the block is accepted on L2 the read returns the previous state.
+- `useSyncOnChainTransfers`: the backend now reads Starknet `Transfer` events (USDC, USDT, ETH, STRK) instead of Voyager.
+
+### Verification
+
+Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](https://github.com/chipi-pay/sdks/actions/runs/36627421432)): `setupSession` registered the session and a USDC policy (1 USDC per call, 5 per day) in one transaction; `getSessionData` read it active with 100 calls; a session-signed `USDC.transfer(self, 0)` left 99; `revokeSessionKey` zeroed it.
 
 ## v14.13.1 (unreleased)
 
