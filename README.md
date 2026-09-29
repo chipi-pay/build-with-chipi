@@ -66,6 +66,7 @@ Runnable, end-to-end examples in [`tutorials/`](./tutorials):
 | 01 | [Next.js + Clerk wallet](./tutorials/01-nextjs-clerk-wallet) | A gasless web wallet with passkey auth via Clerk |
 | 02 | [Expo + Clerk mobile wallet](./tutorials/02-expo-clerk-mobile-wallet) | The same wallet as a React Native / Expo mobile app |
 | 03 | [Connect with Chipi](./tutorials/03-connect-with-chipi) | A Starknet **dApp** that connects to Chipi wallets — one-line starknet-react connector, gasless signing |
+| 04 | [Agent with a session key and a passkey](./tutorials/04-agent-session-passkey) | A server-side AI agent that trades from a self-custodial passkey wallet inside on-chain caps: one prompt to hire it, one to stop it |
 
 ## Documentation
 

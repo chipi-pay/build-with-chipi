@@ -2,6 +2,49 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.14.0 (2026-09-29)
+
+Agents on passkey wallets. A server-side agent can now spend from a user's self-custodial SHHH wallet inside on-chain caps, hired with one passkey prompt and stopped with another. Everything is additive: no default changes, and 14.13.x code keeps working unchanged.
+
+Walkthrough: [tutorial 04](./tutorials/04-agent-session-passkey) and the [Agent with a session key and a passkey](https://docs.chipipay.com/sdk/guides/agent-sessions) guide.
+
+### `@chipi-stack/chipi-react` (and `nextjs`, `chipi-expo`)
+
+- **`useChipiSession` supports SHHH wallets.** `supportsSession` is true for SHHH wallets with a STARK or ED25519 signer, which includes every SHHH wallet the SDK creates with a passkey. `useChipiWallet().wallet.supportsSessionKeys` uses the same rule, exported as `walletSupportsSessions(wallet)`.
+- **`getEncryptKey` for passkeys.** Pass `getEncryptKey: () => getWalletEncryptKey(credentialId)` instead of a PIN. It runs only when an action needs the owner key, and **before** `getBearerToken`, so the JWT is fetched after the biometric prompt and has not gone stale on the Face ID sheet. `encryptKey` becomes optional; when it is set it wins, as before.
+- **Register a session created elsewhere.** `registerSession({ sessionPublicKey, validUntil, ... })` registers a key your server generated, without `createSession`. The session private key never reaches the browser.
+- **Session and caps in one signature.** `registerSession({ ..., spendingPolicies })` registers the session and one spending policy per token in a single owner-signed transaction, so the session never exists on-chain without its limits.
+- **`revokeSession(sessionPublicKey?)`** revokes a key created elsewhere. `onClick={revokeSession}` still compiles and revokes the current session: the click event is accepted and ignored.
+- **The session state catches up by itself after `registerSession`.** The registration hash comes back before the transaction is in a block, so the first read can still see a zeroed struct. The hook now polls every 3 s, for up to 2 minutes, until the session shows up.
+- With `getEncryptKey`, **every** action resolves the key, so a browser-side `executeWithSession` prompts too. Keep an agent's session on your server for prompt-free execution.
+- **`<Recover />` accepts `labels`** to replace its developer-English copy (`DEFAULT_RECOVER_LABELS` is exported). Unset labels keep today's text.
+
+### `@chipi-stack/backend`
+
+- **`sdk.sessions.setupSession(params, bearerToken)`**: the server-side version of the one-signature setup. Every call is validated before anything is signed; an invalid policy throws `INVALID_SPENDING_POLICY` and nothing is sent.
+- **Pure call builders** for owner-signed session management, to batch with other calls or sign with your own owner path: `buildAddSessionKeyCall`, `buildSetSpendingPolicyCall`, `buildRemoveSpendingPolicyCall`, `buildRevokeSessionKeyCall`, `buildSessionSetupCalls`, plus `normalizeEntrypoints` and `validateSpendingPolicyConfig`.
+- **`sdk.ai`**: `prices`, `signals`, `think`, `execute`, `chat` and `models` for `/v1/ai/*`, typed from the API's responses. Server-only: it authenticates with the SDK's `sk_` and throws `ChipiAuthError` without one, so a public key in a browser bundle can never spend your AI credits through it.
+- **`isThinkDecision(decision)`**: `/v1/ai/think` can return `{ raw }` when the model does not answer in JSON, and nothing stopped a caller from acting on an unexpected `action`. This guard accepts only `swap | supply | withdraw | hold` with the right field types. It checks shape, not judgement: the amounts are still yours to cap.
+- **`SessionTxVerifier`** (opt-in; take `from` from the caller's authenticated identity, since hashes are public): when a client pays by sending the transfer itself and hands you the hash, a hash is not proof of payment. The verifier accepts it only if the transaction succeeded, a `Transfer` event from the token moved at least `minAmount` from the payer to you, and the hash was never accepted before (`TxHashStore`, in memory by default; back it with a unique index in production). A failed check never consumes the hash. `X402Facilitator` is unchanged.
+
+### `@chipi-stack/nextjs`
+
+Re-exports what Next.js apps previously had to import from `@chipi-stack/chipi-react` directly: `useGuardianRecovery`, `useThresholdSign`, `useShhhSigner`, `useMigrateWalletToShhh`, `useX402Payment`, `<Recover />`, `DEFAULT_RECOVER_LABELS`, `walletSupportsSessions`, and `PrfUnsupportedError` as a class, so `err instanceof PrfUnsupportedError` works.
+
+### `@chipi-stack/chipi-expo`
+
+Re-exports `useGuardianRecovery`, `useX402Payment` and `walletSupportsSessions`. `<Recover />` renders DOM elements and `PrfUnsupportedError` belongs to browser WebAuthn, so neither is exported from Expo.
+
+### Docs
+
+- The `/v1/ai/think` pages listed the decision as `hold`, `buy` or `sell`. The API returns `swap`, `supply`, `withdraw` or `hold`; code that branched on `"buy"` never ran.
+- `getSessionData` reads the latest accepted block. Right after a register, execute or revoke, wait with `waitForTransaction(txHash)` first: until the block is accepted on L2 the read returns the previous state.
+- `useSyncOnChainTransfers`: the backend now reads Starknet `Transfer` events (USDC, USDT, ETH, STRK) instead of Voyager.
+
+### Verification
+
+Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](https://github.com/chipi-pay/sdks/actions/runs/36627421432)): `setupSession` registered the session and a USDC policy (1 USDC per call, 5 per day) in one transaction; `getSessionData` read it active with 100 calls; a session-signed `USDC.transfer(self, 0)` left 99; `revokeSessionKey` zeroed it.
+
 ## v14.13.1 (2026-09-29)
 
 Sessions were unusable in 14.13.0 and earlier: a session registered correctly on-chain, then read back as inactive, and a whitelist written with function names allowed nothing. This patch fixes both without changing any type or field name.
@@ -24,7 +67,7 @@ Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](htt
 
 ### `@chipi-stack/chipi-react`
 
-- **`useChipiSession` executes again.** It relied on `isActive`, so every registered session looked revoked and `executeWithSession` refused to run. A zeroed struct now reads as `"created"` (not registered yet, or revoked elsewhere), and the hook reports `"revoked"` after its own `revokeSession` succeeds.
+- **`useChipiSession` executes again.** It relied on `isActive`, so every registered session looked revoked and `executeWithSession` refused to run. A zeroed struct now reads as `"created"` (not registered yet, or revoked elsewhere). The hook reports `"revoked"` after its own `revokeSession` succeeds, `"active"` again if the same key is registered afterwards, and `"expired"` once the session is past its own `validUntil`.
 - **Passkey errors keep their code.** `useCreateWallet({ usePasskey: true })` and `useMigrateWalletToPasskey` rethrow with the same message prefix as before, and now also carry the original `code` (for example `PRF_UNSUPPORTED` from `@chipi-stack/chipi-passkey` 2.3.0) and the original error as `cause`. Branch on `error.code === "PRF_UNSUPPORTED"` instead of matching the message.
 
 ### Python (`chipi-stack` 2.3.3)
