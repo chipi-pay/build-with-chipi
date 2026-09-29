@@ -45,7 +45,7 @@ Re-exports `useGuardianRecovery`, `useX402Payment` and `walletSupportsSessions`.
 
 Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](https://github.com/chipi-pay/sdks/actions/runs/36627421432)): `setupSession` registered the session and a USDC policy (1 USDC per call, 5 per day) in one transaction; `getSessionData` read it active with 100 calls; a session-signed `USDC.transfer(self, 0)` left 99; `revokeSessionKey` zeroed it.
 
-## v14.13.1 (unreleased)
+## v14.13.1 (2026-09-29)
 
 Sessions were unusable in 14.13.0 and earlier: a session registered correctly on-chain, then read back as inactive, and a whitelist written with function names allowed nothing. This patch fixes both without changing any type or field name.
 
