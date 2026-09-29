@@ -2,6 +2,39 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.13.1 (2026-09-29)
+
+Sessions were unusable in 14.13.0 and earlier: a session registered correctly on-chain, then read back as inactive, and a whitelist written with function names allowed nothing. This patch fixes both without changing any type or field name.
+
+### `@chipi-stack/backend` and `@chipi-stack/types`
+
+- **`getSessionData` reads the real on-chain layout.** `get_session_data` returns the stored `SessionData` struct, `[valid_until, max_calls, calls_used, allowed_entrypoints_len]`, the same on CHIPI v29, v33 and SHHH V8.4. The SDK decoded it as `[is_active, valid_until, remaining_calls, …]`, so `isActive` was effectively always `false`, `validUntil` held `max_calls` and `remainingCalls` held `calls_used`. Now:
+  - `isActive` mirrors the contract's own check: registered, not expired, calls left;
+  - `remainingCalls` is `max_calls - calls_used`, so a fresh session with `maxCalls: 100` reads `100`, and `99` after one execution;
+  - `validUntil` is `0` for a session that was never registered **or** was revoked (the contract zeroes both);
+  - `allowedEntrypoints` is always `[]`. The struct carries the whitelist length, never the selectors, so an empty array here does **not** mean "all allowed".
+- **`allowedEntrypoints` accepts function names.** Entries went to `add_or_update_session_key` unchanged. On CHIPI wallets `"transfer"` was encoded as a short string: registration succeeded and every later session call failed the whitelist. On SHHH wallets serialising the name threw. Names are now converted to selectors before registration; hex selectors and decimal felts pass through; anything else throws `SESSION_ENTRYPOINT_NOT_ALLOWED`.
+
+  The whitelist is **not scoped to a contract**: `"transfer"` allows `transfer` on every token the wallet holds. Pair it with a spending policy.
+- SHHH outside executions hash `call.entrypoint` with `hash.getSelector`, so a hex selector passed as an entrypoint is no longer hashed a second time.
+
+### Verification
+
+Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](https://github.com/chipi-pay/sdks/actions/runs/36627419707)): a session registered with `["transfer"]` read back active with 100 calls, and 99 after one session-signed `USDC.transfer(self, 0)`.
+
+### `@chipi-stack/chipi-react`
+
+- **`useChipiSession` executes again.** It relied on `isActive`, so every registered session looked revoked and `executeWithSession` refused to run. A zeroed struct now reads as `"created"` (not registered yet, or revoked elsewhere), and the hook reports `"revoked"` after its own `revokeSession` succeeds.
+- **Passkey errors keep their code.** `useCreateWallet({ usePasskey: true })` and `useMigrateWalletToPasskey` rethrow with the same message prefix as before, and now also carry the original `code` (for example `PRF_UNSUPPORTED` from `@chipi-stack/chipi-passkey` 2.3.0) and the original error as `cause`. Branch on `error.code === "PRF_UNSUPPORTED"` instead of matching the message.
+
+### Python (`chipi-stack` 2.3.3)
+
+Same two session fixes: `get_session_data` decodes the struct, and `allowed_entrypoints` accepts function names (anything else raises `ChipiSessionError`).
+
+### Upgrading
+
+No code changes are required. If you worked around the whitelist bug by passing hex selectors, keep them: they pass through unchanged. If you read `allowedEntrypoints` from `getSessionData`, stop: it was never populated correctly, and now it is documented as always empty.
+
 ## v14.12.1 (unreleased)
 
 ### `@chipi-stack/shared`
