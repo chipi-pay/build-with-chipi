@@ -2,7 +2,7 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.13.1 (unreleased)
+## v14.13.1 (2026-09-29)
 
 Sessions were unusable in 14.13.0 and earlier: a session registered correctly on-chain, then read back as inactive, and a whitelist written with function names allowed nothing. This patch fixes both without changing any type or field name.
 
