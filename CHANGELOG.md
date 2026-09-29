@@ -55,6 +55,10 @@ Sessions were unusable in 14.13.0 and earlier: a session registered correctly on
   The whitelist is **not scoped to a contract**: `"transfer"` allows `transfer` on every token the wallet holds. Pair it with a spending policy.
 - SHHH outside executions hash `call.entrypoint` with `hash.getSelector`, so a hex selector passed as an entrypoint is no longer hashed a second time.
 
+### Verification
+
+Mainnet smoke against staging chipi-back, on a fresh SHHH V8.4 wallet ([run](https://github.com/chipi-pay/sdks/actions/runs/36627419707)): a session registered with `["transfer"]` read back active with 100 calls, and 99 after one session-signed `USDC.transfer(self, 0)`.
+
 ### `@chipi-stack/chipi-react`
 
 - **`useChipiSession` executes again.** It relied on `isActive`, so every registered session looked revoked and `executeWithSession` refused to run. A zeroed struct now reads as `"created"` (not registered yet, or revoked elsewhere). The hook reports `"revoked"` after its own `revokeSession` succeeds, `"active"` again if the same key is registered afterwards, and `"expired"` once the session is past its own `validUntil`.
