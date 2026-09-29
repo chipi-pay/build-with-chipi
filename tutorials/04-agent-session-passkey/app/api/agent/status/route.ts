@@ -11,10 +11,10 @@ export async function GET() {
   const agent = getAgent(userId);
   if (!agent) return NextResponse.json({ hired: false });
 
-  const wallet = await chipi.getWallet({ externalUserId: userId });
+  const wallet = await chipi().getWallet({ externalUserId: userId });
   if (!wallet) return NextResponse.json({ hired: false });
 
-  const onChain = await chipi.sessions.getSessionData({
+  const onChain = await chipi().sessions.getSessionData({
     walletAddress: wallet.publicKey,
     sessionPublicKey: agent.session.publicKey,
   });

@@ -18,11 +18,11 @@ export async function POST() {
   const agent = getAgent(userId);
   if (!agent?.active) return NextResponse.json({ error: "agent not hired" }, { status: 409 });
 
-  const wallet = await chipi.getWallet({ externalUserId: userId });
+  const wallet = await chipi().getWallet({ externalUserId: userId });
   if (!wallet) return NextResponse.json({ error: "no wallet" }, { status: 404 });
 
   // 1. Session still live? (expired, revoked elsewhere, or out of calls)
-  const onChain = await chipi.sessions.getSessionData({
+  const onChain = await chipi().sessions.getSessionData({
     walletAddress: wallet.publicKey,
     sessionPublicKey: agent.session.publicKey,
   });
@@ -34,13 +34,13 @@ export async function POST() {
   // 2. Portfolio
   const balances = await Promise.all(
     [ChainToken.USDC, ChainToken.ETH, ChainToken.STRK].map((chainToken) =>
-      chipi.getTokenBalance({ walletPublicKey: wallet.publicKey, chainToken, chain: Chain.STARKNET })
+      chipi().getTokenBalance({ walletPublicKey: wallet.publicKey, chainToken, chain: Chain.STARKNET })
     )
   );
   const portfolio = Object.fromEntries(balances.map((b) => [b.chainToken, { balance: b.balance }]));
 
   // 3. Decide (billed to your org's AI credits)
-  const { decision } = await chipi.ai.think({ portfolio, riskScore: 3 });
+  const { decision } = await chipi().ai.think({ portfolio, riskScore: 3 });
   const record = (action: string, reason: string, extra: { txHash?: string; success?: boolean } = {}) =>
     saveAgent(userId, {
       ...agent,
@@ -70,7 +70,7 @@ export async function POST() {
   }
 
   // 5. Build the swap and sign it with the session key
-  const { calls } = await chipi.ai.execute({
+  const { calls } = await chipi().ai.execute({
     chain: "starknet",
     action: "swap",
     from,
@@ -79,7 +79,7 @@ export async function POST() {
     walletAddress: wallet.publicKey,
     slippage: 0.01,
   });
-  const txHash = await chipi.executeTransactionWithSession({
+  const txHash = await chipi().executeTransactionWithSession({
     params: { encryptKey: agentSessionSecret(), wallet, session: agent.session, calls },
   });
 

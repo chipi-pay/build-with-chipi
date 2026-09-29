@@ -2,7 +2,7 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.14.0 (unreleased)
+## v14.14.0 (2026-09-29)
 
 Agents on passkey wallets. A server-side agent can now spend from a user's self-custodial SHHH wallet inside on-chain caps, hired with one passkey prompt and stopped with another. Everything is additive: no default changes, and 14.13.x code keeps working unchanged.
 

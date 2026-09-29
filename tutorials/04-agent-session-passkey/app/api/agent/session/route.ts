@@ -15,7 +15,7 @@ export async function POST() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const session = chipi.sessions.createSessionKey({
+  const session = chipi().sessions.createSessionKey({
     encryptKey: agentSessionSecret(),
     durationSeconds: SESSION_SECONDS,
   });
@@ -48,9 +48,9 @@ export async function PATCH(req: Request) {
 
   // Trust the chain, not the client: only mark active if the session is live on-chain.
   if (active) {
-    const wallet = await chipi.getWallet({ externalUserId: userId });
+    const wallet = await chipi().getWallet({ externalUserId: userId });
     if (!wallet) return NextResponse.json({ error: "no wallet" }, { status: 404 });
-    const onChain = await chipi.sessions.getSessionData({
+    const onChain = await chipi().sessions.getSessionData({
       walletAddress: wallet.publicKey,
       sessionPublicKey: agent.session.publicKey,
     });

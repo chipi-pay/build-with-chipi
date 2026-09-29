@@ -64,7 +64,7 @@ Two rules that are easy to get wrong:
 The server creates the session key and keeps the encrypted private half ([`app/api/agent/session/route.ts`](./app/api/agent/session/route.ts)):
 
 ```ts
-const session = chipi.sessions.createSessionKey({
+const session = chipi().sessions.createSessionKey({
   encryptKey: agentSessionSecret(),
   durationSeconds: SESSION_SECONDS,
 });
@@ -96,9 +96,9 @@ Then the server waits for that transaction and checks the chain (`getSessionData
 
 1. Check that the session is still live on-chain (not expired, revoked or out of calls).
 2. Read the balances.
-3. `chipi.ai.think({ portfolio, riskScore: 3 })`.
+3. `chipi().ai.think({ portfolio, riskScore: 3 })`.
 4. **Validate.** `isThinkDecision` rejects a non-JSON reply or an unknown action. Only `swap` between tradable tokens goes through, and the amount is capped at `MAX_TRADE_USD` whatever the model said.
-5. `chipi.ai.execute(...)` returns unsigned AVNU calls; `chipi.executeTransactionWithSession(...)` signs them with the session key.
+5. `chipi().ai.execute(...)` returns unsigned AVNU calls; `chipi().executeTransactionWithSession(...)` signs them with the session key.
 6. `waitForTransaction(txHash)`: a hash is not a result. A swap above a cap reverts on-chain and shows up here as `success: false`.
 
 ## 6. Stop the agent: one prompt
