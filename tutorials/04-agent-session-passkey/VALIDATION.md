@@ -35,5 +35,6 @@
 | Create wallet | | |
 | Hire (session + 3 policies, one tx) | | |
 | One decision | | |
-| Over-cap swap reverts | | |
+| Over-cap swap is refused (success, nothing moved, recorded as failed) | | |
+| Decision paid over x402 (org without AI credits) | | |
 | Stop | | |

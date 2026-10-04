@@ -1,6 +1,6 @@
 // Every limit the agent runs under, in one place. The same numbers are
 // enforced twice: on-chain by the spending policies (the wallet contract
-// reverts anything above them) and here, before the agent asks for a swap.
+// refuses anything above them) and here, before the agent asks for a swap.
 
 export const TOKENS = {
   USDC: "0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb",
@@ -35,6 +35,13 @@ export const SPENDING_POLICIES = [
 
 /** The largest single swap the agent may request, in USD. Below the USDC per-call cap. */
 export const MAX_TRADE_USD = 5;
+
+/**
+ * The most the agent pays for one AI decision over x402, in USDC base units
+ * ($0.02). Chipi asks for payment only when your org has no AI credits; the
+ * payment is a session `transfer`, so the USDC policy above caps it too.
+ */
+export const MAX_AI_PRICE_USDC = 20_000n;
 
 /** Tokens the agent is allowed to trade. Anything else the model suggests is ignored. */
 export const TRADABLE = new Set(["USDC", "ETH", "STRK"]);

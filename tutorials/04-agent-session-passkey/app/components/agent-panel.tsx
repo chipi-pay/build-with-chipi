@@ -83,7 +83,7 @@ export function AgentPanel({ wallet }: { wallet: ChipiWalletData }) {
     setMessage(null);
     const res = await fetch("/api/agent/tick", { method: "POST" });
     const body = (await res.json()) as { action?: string; txHash?: string; success?: boolean; error?: string };
-    setMessage(body.error ?? (body.txHash ? `${body.action}: ${body.success ? "confirmed" : "reverted"} ${body.txHash}` : "hold"));
+    setMessage(body.error ?? (body.txHash ? `${body.action}: ${body.success ? "confirmed" : "failed"} ${body.txHash}` : "hold"));
     setTicking(false);
     await refresh();
   };
@@ -142,7 +142,7 @@ export function AgentPanel({ wallet }: { wallet: ChipiWalletData }) {
               <span className="font-medium">{d.action}</span> · {d.reason}
               {d.txHash && (
                 <a className="ml-1 underline" href={`https://voyager.online/tx/${d.txHash}`} target="_blank" rel="noreferrer">
-                  {d.success ? "tx" : "reverted"}
+                  {d.success ? "tx" : "failed"}
                 </a>
               )}
             </li>

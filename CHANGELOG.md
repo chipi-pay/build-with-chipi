@@ -2,6 +2,38 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.15.0 (2026-10-04)
+
+An agent can pay for Chipi's AI API from its session key, per call, over x402. Everything is additive: no default changes, and 14.14.x code keeps working unchanged.
+
+Walkthrough: [tutorial 04](./tutorials/04-agent-session-passkey), step 5.3, and the [x402 with sessions](https://docs.chipipay.com/sdk/guides/x402-sessions) guide.
+
+### `@chipi-stack/backend`
+
+- **`sdk.ai.think(params, { payWithSession })`** pays only when `/v1/ai/think` answers 402 with an x402 `session-transfer` offer (credits short, x402 on). It sends a session-signed USDC `transfer` to the offer's `payTo`, waits for the receipt, and sends the same call again with `X-PAYMENT`. With credits, nothing is paid and the call behaves as in 14.14.
+- **It refuses before paying:** a price above `maxAmount` (`X402_PRICE_ABOVE_MAX`), a model the offer does not list (`X402_MODEL_NOT_PAYABLE`), an input over `maxPromptBytes` (`X402_PAYLOAD_TOO_LARGE`), or a `maxAmount` that is not an integer of USDC base units (`X402_INVALID_MAX_AMOUNT`).
+- **A transfer counts only when the USDC arrived.** The receipt is checked with `SessionTxVerifier`. A transfer the wallet refused (not whitelisted, over its cap) comes back SUCCEEDED with nothing moved; that throws `X402_PAYMENT_FAILED` and is never sent to the API.
+- **Retries without paying twice.** A paid call the API asks to retry (503 `retryable: true`, 409 in progress) is retried, up to 3 attempts. If it still fails, or the receipt does not arrive (`X402_PAYMENT_PENDING`), the error carries `details.xPayment`; pass it back as `options.xPayment`.
+- The session must whitelist `transfer` and cap USDC. `ThinkResponse.x402Payment` is set when the call was paid.
+- **`ChipiClient.post({ headers })`** sends extra request headers, such as `X-PAYMENT`. They cannot override `Authorization`, `x-api-key` or `Content-Type`.
+
+### `@chipi-stack/shared`
+
+- **`ChipiApiError.details`**: the API's error body, as returned. Read fields beyond `code` and `message` from it, such as the `x402` offer of a 402 or `availableModels` of a `MODEL_UNAVAILABLE`.
+
+### `@chipi-stack/types`
+
+- `ThinkOptions`, `ThinkSessionPayment`, `ThinkX402Payment`, and `ThinkResponse.x402Payment`.
+
+### Docs
+
+- **A refused session call reports success.** Through Chipi's paymaster, a session call the wallet refuses (over its cap, not whitelisted, revoked session) comes back SUCCEEDED with no `Transfer` event. Check the receipt's events, not `success` alone. Tutorial 04's tick now does.
+- **`MODEL_UNAVAILABLE` (503).** When a model's provider is down or out of credit, the API answers 503 with `retryable: false`, `retryAfterSeconds` and `availableModels`, and `/v1/ai/models` reports `available` per model.
+
+### Verification
+
+Unit tests cover the paid path: offer checks, refused and pending transfers, canonical `X-PAYMENT` felts and retries. `MODEL_UNAVAILABLE` was checked live on 2026-10-04. A live paid call has not been run yet: it needs an org without AI credits, so the API returns the 402 offer.
+
 ## v14.14.0 (2026-09-29)
 
 Agents on passkey wallets. A server-side agent can now spend from a user's self-custodial SHHH wallet inside on-chain caps, hired with one passkey prompt and stopped with another. Everything is additive: no default changes, and 14.13.x code keeps working unchanged.
