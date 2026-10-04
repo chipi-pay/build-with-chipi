@@ -3,7 +3,24 @@ import { NextResponse } from "next/server";
 import { Chain, ChainToken, isThinkDecision, waitForTransaction } from "@chipi-stack/backend";
 import { agentSessionSecret, chipi } from "@/lib/chipi";
 import { getAgent, saveAgent } from "@/lib/agent-store";
-import { MAX_TRADE_USD, TRADABLE } from "@/lib/limits";
+import { MAX_AI_PRICE_USDC, MAX_TRADE_USD, TRADABLE } from "@/lib/limits";
+
+/** selector("Transfer"), the ERC-20 event. */
+const TRANSFER = BigInt("0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9");
+
+/**
+ * Did a token leave or reach the wallet? A call the wallet refuses (over a
+ * cap, not whitelisted, revoked session) still comes back `success: true`
+ * through the paymaster, with nothing moved.
+ */
+function movedFunds(events: { keys: string[]; data: string[] }[], wallet: string): boolean {
+  const me = BigInt(wallet);
+  return events.some(
+    (e) =>
+      BigInt(e.keys[0] ?? 0) === TRANSFER &&
+      [e.keys[1], e.keys[2]].some((k) => k !== undefined && BigInt(k) === me)
+  );
+}
 
 /**
  * POST: one agent decision.
@@ -39,8 +56,19 @@ export async function POST() {
   );
   const portfolio = Object.fromEntries(balances.map((b) => [b.chainToken, { balance: b.balance }]));
 
-  // 3. Decide (billed to your org's AI credits)
-  const { decision } = await chipi().ai.think({ portfolio, riskScore: 3 });
+  // 3. Decide. Billed to your org's AI credits; when they run out, Chipi asks
+  // for $0.015 over x402 and the agent pays it from its session (capped).
+  const { decision } = await chipi().ai.think(
+    { portfolio, riskScore: 3 },
+    {
+      payWithSession: {
+        encryptKey: agentSessionSecret(),
+        wallet,
+        session: agent.session,
+        maxAmount: MAX_AI_PRICE_USDC,
+      },
+    }
+  );
   const record = (action: string, reason: string, extra: { txHash?: string; success?: boolean } = {}) =>
     saveAgent(userId, {
       ...agent,
@@ -83,9 +111,16 @@ export async function POST() {
     params: { encryptKey: agentSessionSecret(), wallet, session: agent.session, calls },
   });
 
-  // 6. A hash is not a result. A cap breach reverts here.
+  // 6. A hash is not a result, and neither is `success`: a swap the wallet
+  // refused (over a cap) succeeds with nothing moved. The Transfer is the proof.
   const receipt = await waitForTransaction(txHash);
-  record(`swap ${from} -> ${to} ($${amountUsd})`, decision.reason, { txHash, success: receipt.success });
+  const success = receipt.success && movedFunds(receipt.events, wallet.publicKey);
+  record(`swap ${from} -> ${to} ($${amountUsd})`, decision.reason, { txHash, success });
 
-  return NextResponse.json({ action: "swap", txHash, success: receipt.success, revertReason: receipt.revertReason });
+  return NextResponse.json({
+    action: "swap",
+    txHash,
+    success,
+    reason: success ? undefined : receipt.revertReason ?? "refused by the wallet: nothing moved",
+  });
 }

@@ -6,7 +6,7 @@ Let a server-side agent trade from a user's **self-custodial** wallet without ev
 - In between, the agent signs with a **session key** that the wallet contract limits by itself: which functions it may call, how many times, until when, and how much of each token per call and per day.
 - The agent decides with Chipi's AI API (`sdk.ai`) and checks every decision against your own limits before it moves anything.
 
-Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.14.0** or later.
+Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.15.0** or later (14.14.0 without paying for AI over x402).
 
 ## What runs where
 
@@ -29,7 +29,7 @@ cp env.example .env.local   # fill in Clerk + Chipi keys and AGENT_SESSION_SECRE
 npm run dev
 ```
 
-In the [Chipi dashboard](https://dashboard.chipipay.com), register Clerk's JWKS for your org, and add AI credits (the agent's decisions are billed to them).
+In the [Chipi dashboard](https://dashboard.chipipay.com), register Clerk's JWKS for your org. Add AI credits to pay for the agent's decisions from your org; without them the agent pays each decision itself over x402 (step 5).
 
 ## 2. Create a passkey wallet
 
@@ -53,6 +53,7 @@ await createWalletAsync({
 - `ALLOWED_ENTRYPOINTS`: `approve`, `transfer` and `multi_route_swap` (AVNU). Names are converted to selectors by the SDK.
 - `SPENDING_POLICIES`: a per-call and per-day cap for USDC, ETH and STRK.
 - `MAX_TRADE_USD`: the largest swap the agent may ask for.
+- `MAX_AI_PRICE_USDC`: the most the agent pays for one AI decision over x402 ($0.02).
 
 Two rules that are easy to get wrong:
 
@@ -96,10 +97,10 @@ Then the server waits for that transaction and checks the chain (`getSessionData
 
 1. Check that the session is still live on-chain (not expired, revoked or out of calls).
 2. Read the balances.
-3. `chipi().ai.think({ portfolio, riskScore: 3 })`.
+3. `chipi().ai.think({ portfolio, riskScore: 3 }, { payWithSession })`. With AI credits, the decision is billed to them. Without, Chipi answers 402 with an x402 offer ($0.015) and the SDK pays it from the session: a USDC `transfer` (whitelisted, capped by the USDC policy), then the same call again with `X-PAYMENT`. It refuses before paying if the price is above `MAX_AI_PRICE_USDC`.
 4. **Validate.** `isThinkDecision` rejects a non-JSON reply or an unknown action. Only `swap` between tradable tokens goes through, and the amount is capped at `MAX_TRADE_USD` whatever the model said.
 5. `chipi().ai.execute(...)` returns unsigned AVNU calls; `chipi().executeTransactionWithSession(...)` signs them with the session key.
-6. `waitForTransaction(txHash)`: a hash is not a result. A swap above a cap reverts on-chain and shows up here as `success: false`.
+6. `waitForTransaction(txHash)`: a hash is not a result, and `success` is not either. A swap the wallet refuses (over a cap) is sent through Chipi's paymaster, whose transaction succeeds with nothing moved. The route counts the swap only if a `Transfer` left or reached the wallet (`movedFunds`).
 
 ## 6. Stop the agent: one prompt
 
@@ -114,11 +115,11 @@ The browser never held the session, so it passes the public key. After revocatio
 - Replace the in-memory store in [`lib/agent-store.ts`](./lib/agent-store.ts) with a table.
 - Keep `AGENT_SESSION_SECRET` in your secret manager; rotating it means re-hiring every agent.
 - Cap deposits while you are in beta, and tell users the agent can lose money within its limits.
-- If the agent pays for an API per call, verify each payment with `SessionTxVerifier` (see [the guide](https://docs.chipipay.com/sdk/guides/agent-sessions)).
+- If your own API sells calls to agents, verify each payment with `SessionTxVerifier` (see [the guide](https://docs.chipipay.com/sdk/guides/x402-sessions)). `payWithSession` is the buyer side of that pattern.
 
 ## Related docs
 
 - [Agent with a session key and a passkey](https://docs.chipipay.com/sdk/guides/agent-sessions)
 - [useChipiSession](https://docs.chipipay.com/sdk/nextjs/hooks/use-chipi-session)
-- [DeFi intelligence (AI API)](https://docs.chipipay.com/services/ai-api/defi-intelligence)
+- [DeFi intelligence (AI API)](https://docs.chipipay.com/services/ai-api/defi-intelligence), including [paying per call with x402](https://docs.chipipay.com/services/ai-api/defi-intelligence#pay-per-call-with-x402)
 - [Spending policies](https://docs.chipipay.com/sdk/guides/spending-policies)
