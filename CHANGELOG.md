@@ -2,7 +2,7 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.15.0 (unreleased)
+## v14.15.0 (2026-10-04)
 
 An agent can pay for Chipi's AI API from its session key, per call, over x402. Everything is additive: no default changes, and 14.14.x code keeps working unchanged.
 
