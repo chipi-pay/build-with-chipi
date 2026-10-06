@@ -2,6 +2,21 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.15.1 (2026-10-06)
+
+### `@chipi-stack/backend`
+
+- **`sdk.ai.think(params, { payWithSession })` no longer pays from a wallet the API would refuse.** Chipi accepts an x402 payment only from a wallet of the organization that owns the `sk_` (`PAYER_NOT_IN_ORG`), and in 14.15.0 that refusal came after the USDC had moved. The first request now names the paying wallet in an `X-PAYER` header; when the offer's `extra.payer` answers `accepted: false`, `think` throws `X402_PAYER_NOT_IN_ORG` (402) and nothing is paid. An API that does not answer `X-PAYER` leaves `extra.payer` unset, and the SDK pays as in 14.15.0.
+
+### Docs
+
+- The agent-sessions guide's tick checked `receipt.success` alone. A session call the wallet refuses comes back `success: true` with nothing moved, so the example now also requires a `Transfer` from or to the wallet.
+- Passkey-only wallets are documented as the self-custodial default, with unlocking on a new device from the wallet row's `credentialId` and `prfSupported`.
+
+### Verification
+
+Unit tests cover `X-PAYER` and the refusal. Live on 2026-10-06 against production, with an org that has no AI credits and a wallet of another org: the offer answered `accepted: false`, and `think` threw `X402_PAYER_NOT_IN_ORG` without sending any transaction.
+
 ## v14.15.0 (2026-10-04)
 
 An agent can pay for Chipi's AI API from its session key, per call, over x402. Everything is additive: no default changes, and 14.14.x code keeps working unchanged.

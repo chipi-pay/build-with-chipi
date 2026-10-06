@@ -6,7 +6,7 @@ Let a server-side agent trade from a user's **self-custodial** wallet without ev
 - In between, the agent signs with a **session key** that the wallet contract limits by itself: which functions it may call, how many times, until when, and how much of each token per call and per day.
 - The agent decides with Chipi's AI API (`sdk.ai`) and checks every decision against your own limits before it moves anything.
 
-Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.15.0** or later (14.14.0 without paying for AI over x402).
+Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.15.1** or later (14.14.0 without paying for AI over x402).
 
 ## What runs where
 
@@ -97,7 +97,7 @@ Then the server waits for that transaction and checks the chain (`getSessionData
 
 1. Check that the session is still live on-chain (not expired, revoked or out of calls).
 2. Read the balances.
-3. `chipi().ai.think({ portfolio, riskScore: 3 }, { payWithSession })`. With AI credits, the decision is billed to them. Without, Chipi answers 402 with an x402 offer ($0.015) and the SDK pays it from the session: a USDC `transfer` (whitelisted, capped by the USDC policy), then the same call again with `X-PAYMENT`. It refuses before paying if the price is above `MAX_AI_PRICE_USDC`.
+3. `chipi().ai.think({ portfolio, riskScore: 3 }, { payWithSession })`. With AI credits, the decision is billed to them. Without, Chipi answers 402 with an x402 offer ($0.015) and the SDK pays it from the session: a USDC `transfer` (whitelisted, capped by the USDC policy), then the same call again with `X-PAYMENT`. It refuses before paying if the price is above `MAX_AI_PRICE_USDC`, or if the wallet is not one of your org's (`X402_PAYER_NOT_IN_ORG`): Chipi accepts a payment only from a wallet of the org that owns the `sk_`. The wallets this app creates always qualify.
 4. **Validate.** `isThinkDecision` rejects a non-JSON reply or an unknown action. Only `swap` between tradable tokens goes through, and the amount is capped at `MAX_TRADE_USD` whatever the model said.
 5. `chipi().ai.execute(...)` returns unsigned AVNU calls; `chipi().executeTransactionWithSession(...)` signs them with the session key.
 6. `waitForTransaction(txHash)`: a hash is not a result, and `success` is not either. A swap the wallet refuses (over a cap) is sent through Chipi's paymaster, whose transaction succeeds with nothing moved. The route counts the swap only if a `Transfer` left or reached the wallet (`movedFunds`).
