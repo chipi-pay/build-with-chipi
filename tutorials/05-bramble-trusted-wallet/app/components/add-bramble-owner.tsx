@@ -286,6 +286,22 @@ export function AddBrambleOwner({
         >
           {busy ? "Waiting…" : "(b) Propose Bramble as co-owner (passkey)"}
         </button>
+      ) : ops.length > 0 && now >= expiresAt ? (
+        <div className="flex flex-col gap-2 text-sm">
+          <p>The proposal expired {new Date(expiresAt * 1000).toLocaleString()} without being executed.</p>
+          <button
+            onClick={() =>
+              run(async () => {
+                // Forget the expired proposal; Bramble's confirmed key stays.
+                store(walletAddress, { brambleAddress: saved.brambleAddress, starkPubkey: saved.starkPubkey, pubkeyFelts: saved.pubkeyFelts });
+              })
+            }
+            disabled={busy}
+            className="rounded bg-white px-4 py-2 text-black disabled:opacity-60"
+          >
+            Propose again
+          </button>
+        </div>
       ) : waitSeconds > 0 ? (
         <p className="text-sm">
           Timelock: {duration(waitSeconds)} left. Any owner can cancel the proposal until it is executed. It expires{" "}
@@ -294,7 +310,7 @@ export function AddBrambleOwner({
       ) : (
         <button
           onClick={() => execute(saved, ops)}
-          disabled={busy || !declared || ops.length === 0 || now >= expiresAt}
+          disabled={busy || !declared || ops.length === 0}
           className="rounded bg-white px-4 py-2 text-black disabled:opacity-60"
         >
           {busy ? "Waiting…" : "(c) Add Bramble as co-owner (passkey)"}

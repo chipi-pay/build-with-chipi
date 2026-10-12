@@ -11,7 +11,7 @@ Bramble is a browser-extension wallet (`window.starknet_bramble`). Braavos, Read
 
 Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.17.0** or later (14.16.0 for sign-in only). Starknet **mainnet** only.
 
-> **Step 5 waits for a declare.** Bramble co-signs through a new signer kind, `STARK_SNIP12`, whose verifier class is **pending its mainnet declare**. Until it is declared the app says so and disables step 5 (it checks with `isShhhVerifierDeclared`). Steps 1 to 4 work today.
+> **Steps 5 and 6 wait for a declare.** Bramble co-signs through a new signer kind, `STARK_SNIP12`, whose verifier class is **pending its mainnet declare**. Until it is declared the app says so and disables the proposal in step 5 (it checks with `isShhhVerifierDeclared`), and step 6 needs Bramble to be an owner first. Steps 2 to 4 work today.
 
 ## What runs where
 
@@ -61,7 +61,7 @@ Bramble is strict, and every request in this tutorial follows its rules:
 - **Prompts start from a click.** A prompt stays pending until the user decides. Don't auto-retry: Bramble allows 5 pending prompts per site.
 - **Explicit params, no extra keys.** `{ silent_mode: false }`, never `undefined`.
 - **Lowercase hex addresses.**
-- **`113`** = the user declined (or the prompt expired). **`163`** = locked, site not connected, or refused. `brambleErrorMessage` turns both into a sentence.
+- **`113`** = the user declined (or the prompt expired). **`163`** = everything else: locked, site not connected, too many pending prompts, or refused by policy. `brambleErrorMessage` turns both into a sentence.
 - **One account per site.** Before each request, `requireBrambleAccount` checks (silently, with `silent_mode: true`) that Bramble still shows the signed-in account.
 
 Sign in with Starknet takes **two clicks** ([`app/components/sign-in-with-bramble.tsx`](./app/components/sign-in-with-bramble.tsx)): the first connects Bramble and fetches a nonce, the second asks for the signature. Each prompt gets its own click.
@@ -83,7 +83,7 @@ A deployed account answers through its own `is_valid_signature`. A brand-new Bra
 
 On success the server sets a signed, httpOnly cookie, and the **Bramble address becomes the user id**: the JWT's `sub`, and Chipi's `externalUserId`.
 
-**Auth here is deliberately minimal** ([`lib/auth.ts`](./lib/auth.ts)): nonces in memory, a stateless HMAC cookie, and an RS256 JWT signed with a key from `APP_JWT_PRIVATE_KEY` (`/api/auth/token`, published at `/api/auth/jwks`). In production use a real auth library with sessions in a database. [Vela](https://github.com/chipi-pay/vela/blob/main/lib/auth-starknet.ts) does this as a Better Auth plugin: nonces in its `verification` table, wallet linked as an account, the JWT plugin for Chipi.
+**Auth here is deliberately minimal** ([`lib/auth.ts`](./lib/auth.ts)): nonces in memory, a stateless HMAC cookie, and an RS256 JWT signed with a key from `APP_JWT_PRIVATE_KEY` (`/api/auth/token`, published at `/api/auth/jwks`). In production use a real auth library with sessions in a database. With Better Auth, for example, sign-in with Starknet fits as a plugin: nonces in its `verification` table, the wallet linked as an account, and its JWT plugin for Chipi.
 
 ## 3. Create the Chipi wallet (passkey)
 
@@ -151,7 +151,7 @@ const { starkPubkey, pubkeyFelts } = await resolveStarkSnip12Signer({
 });
 ```
 
-`resolveStarkSnip12Signer` reads the key from the deployment data (new account) or from `get_public_key` (deployed OpenZeppelin account), and throws unless that key verifies the signature.
+`resolveStarkSnip12Signer` reads the key from the deployment data (new account) or from `get_public_key` (deployed OpenZeppelin account, Bramble's default), and throws unless that key verifies the signature. It also handles Ready/Argent (the key is in the signature), Braavos (`get_signers`) and Chipi wallets (the owner record).
 
 ### (b) Propose: one passkey prompt
 
@@ -181,7 +181,7 @@ The op ids include the block time, so they come from the receipt. The app keeps 
 
 ### (c) 48 hours later: add it, one passkey prompt
 
-Both proposals have a 48-hour timelock (`TIMELOCK_SECONDS.ADD_OWNER`). The page shows a countdown (`secondsUntilExecutable`). Any owner can cancel before execution. Then one transaction executes both, **verifier first**: `execute_add_owner` checks Bramble's key through it.
+Both proposals have a 48-hour timelock (`TIMELOCK_SECONDS.ADD_OWNER`). The page shows a countdown (`secondsUntilExecutable`). Any owner can cancel before execution. A proposal expires 14 days after it becomes executable (the event's `expiresAt`); the page then offers to propose again. Then one transaction executes both, **verifier first**: `execute_add_owner` checks Bramble's key through it.
 
 ```ts
 const calls = [
@@ -229,7 +229,7 @@ What the agent then does with its session is [tutorial 04](../04-agent-session-p
 - **Mainnet only.** Bramble's typed data must name its active chain; `connectBramble` refuses anything but `SN_MAIN`.
 - **STRK for Bramble.** Funding and any Bramble invoke cost STRK. Chipi-relayed calls (step 6) cost the user nothing.
 - **The declare.** Check `isShhhVerifierDeclared(provider, "STARK_SNIP12")` before offering step 5. Never propose a kind whose class isn't declared: the wallet would register a verifier that can never verify.
-- **A co-owner has full control.** As an `OWNER`, Bramble can sign anything the passkey can: move funds, approve sessions, add or remove owners. A compromised Bramble is a compromised wallet. If the user only wants a backup, make Bramble a **`GUARDIAN`** (`role: "GUARDIAN"`): a guardian can only start a recovery, which completes after 7 days unless an owner cancels it. See the [Trusted wallets](https://docs.chipipay.com/sdk/guides/trusted-wallets) guide.
+- **A co-owner has full control.** As an `OWNER`, Bramble can sign anything the passkey can: move funds, approve sessions, add or remove owners. A compromised Bramble is a compromised wallet. If the user only wants a backup, make Bramble a **`GUARDIAN`** (`role: "GUARDIAN"`): a guardian can only start a recovery, which anyone can finalize after 7 days unless an owner cancels it first. A guardian can't approve sessions, so step 6 needs the `OWNER` role. See the [Trusted wallets](https://docs.chipipay.com/sdk/guides/trusted-wallets) guide.
 - **Bramble signs a hash.** It shows the wallet address and a hash, not the decoded calls. Show the calls in your own UI before asking, as step 6 does.
 - **Real auth and storage.** Replace [`lib/auth.ts`](./lib/auth.ts) and the in-memory [`lib/agent-store.ts`](./lib/agent-store.ts) (a session table, nonces stored with an atomic consume, the JWT key in your secret manager). Keep the proposed op ids on the server too, not only in `localStorage`.
 - **Watch for proposals.** Anyone with an owner key can propose a new owner; the 48-hour timelock is the user's window to cancel (`buildCancelPendingOpCall`). Alert users on every `OpProposed` event of their wallet.
