@@ -33,8 +33,10 @@ function prefersDark() {
 function iconSrc(connector: Connector): string | null {
   const icon = connector.icon as string | { dark?: string; light?: string } | undefined;
   if (!icon) return null;
-  if (typeof icon === "string") return icon;
-  return (prefersDark() ? icon.dark : icon.light) ?? icon.light ?? icon.dark ?? null;
+  const src = typeof icon === "string" ? icon : ((prefersDark() ? icon.dark : icon.light) ?? icon.light ?? icon.dark);
+  if (!src) return null;
+  // Some extensions hand over raw SVG markup instead of a data URI.
+  return src.trimStart().startsWith("<svg") ? `data:image/svg+xml;utf8,${encodeURIComponent(src)}` : src;
 }
 
 function WalletIcon({ connector, size = 40 }: { connector: Connector; size?: number }) {
@@ -45,6 +47,16 @@ function WalletIcon({ connector, size = 40 }: { connector: Connector; size?: num
       {src ? <img src={src} alt="" /> : connector.name.slice(0, 1).toUpperCase()}
     </div>
   );
+}
+
+// Starknet wallet API error codes. Bramble keeps the promise open until the
+// user decides, then rejects with 113; a locked wallet, an unconnected site
+// and its policy refusals all arrive as 163. Offer a retry, never auto-retry.
+function walletError(e: unknown): string {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (code === 113) return "declined in the wallet";
+  if (code === 163) return "the wallet refused: unlock it, reconnect this site, then retry";
+  return (e as Error)?.message ?? String(e);
 }
 
 function short(address: string) {
@@ -61,7 +73,17 @@ export function App() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [, setInjected] = useState(0);
+
   const add = (s: string) => setLog((l) => [s, ...l]);
+
+  // Extensions such as Bramble can inject after the page loads and announce it
+  // with `starknet#initialized`: re-render so `available()` is read again.
+  useEffect(() => {
+    const onInjected = () => setInjected((n) => n + 1);
+    window.addEventListener("starknet#initialized", onInjected);
+    return () => window.removeEventListener("starknet#initialized", onInjected);
+  }, []);
 
   useEffect(() => {
     if (status === "connected") setModalOpen(false);
@@ -93,7 +115,7 @@ export function App() {
       const sig = await account.signMessage(TYPED_DATA as never);
       add(`signTypedData ✓ ${JSON.stringify(sig)}`);
     } catch (e) {
-      add(`signTypedData ✗ ${(e as Error).message}`);
+      add(`signTypedData ✗ ${walletError(e)}`);
     }
   };
 
@@ -101,11 +123,12 @@ export function App() {
     if (!account || !address) return;
     try {
       const res = await account.execute([
-        { contractAddress: USDC, entrypoint: "approve", calldata: [address, "0x0", "0x0"] },
+        // Lowercase hex: Bramble refuses checksummed addresses in calldata.
+        { contractAddress: USDC, entrypoint: "approve", calldata: [address.toLowerCase(), "0x0", "0x0"] },
       ]);
       add(`execute ✓ ${res.transaction_hash}`);
     } catch (e) {
-      add(`execute ✗ ${(e as Error).message}`);
+      add(`execute ✗ ${walletError(e)}`);
     }
   };
 
@@ -117,8 +140,9 @@ export function App() {
         <div className="hero">
           <h1>Connect with Chipi: test dApp</h1>
           <p>
-            Proves the round-trip against a local walletv2 (<code>VITE_CHIPI_WALLET_URL</code>), in the
-            same connector array as any other standard wallet, no whitelisting.
+            Connects to the production Chipi wallet (<code>wallet.chipipay.com</code>, or{" "}
+            <code>VITE_CHIPI_WALLET_URL</code>), in the same connector array as Bramble, Ready, Braavos and
+            Cartridge, no whitelisting.
           </p>
         </div>
 

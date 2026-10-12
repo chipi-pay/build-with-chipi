@@ -6,9 +6,56 @@
 **Auth Provider:** N/A — this tutorial builds the *dApp side* of a wallet
 connection, not an app with its own auth. The Chipi wallet's own auth
 (Clerk + passkey) lives behind the popup, on wallet.chipipay.com.
-**SDK Version:** `@chipi-stack/starknet-connector@0.1.4`
+**SDK Version:** `@chipi-stack/starknet-connector@^0.5.0` (pinned 2026-10-12, pre-release; first report against `0.1.4`)
 **Tutorial Issue:** N/A (migrated from `chipi-pay/sdks/examples/connect-with-chipi`,
 which is private — this tutorial is its public, canonical home)
+
+---
+
+## 2026-10-12 addendum: connector 0.5.0 and Bramble
+
+**Tester:** Claude (agent session). **Not yet reviewed.**
+
+### What changed
+
+- `package.json`: `@chipi-stack/starknet-connector` `^0.2.0` → `^0.5.0` (a caret on `0.x` never crosses a minor, so `^0.4.0` would not reach 0.5).
+- `src/main.tsx`: Bramble added as `new InjectedConnector({ options: { id: "bramble", name: "Bramble" } })`. `injected()` in `@starknet-react/core` 5.0.3 accepts only `{ id }` (checked in `node_modules/@starknet-react/core/dist/index.d.ts`), so `injected({ id, name })` does not compile.
+- `src/App.tsx`: hero text named "a local walletv2" although the default is the production wallet; it now names `wallet.chipipay.com` and `VITE_CHIPI_WALLET_URL`. Re-render on `starknet#initialized` (late injection), messages for wallet codes 113 / 163, lowercase address in calldata, raw-SVG wallet icons rendered as data URIs.
+- `get-starknet-core` kept: it is a peer dependency of `@starknet-react/core` 5.0.3 (`peerDependencies: { "get-starknet-core": "^4.0.0" }` in the lockfile), not unused.
+- README: "Chipi next to Bramble" (passive calls answered locally from 0.5.0, Bramble's rules).
+
+### How it was checked
+
+0.5.0 is not on npm yet (`npm view @chipi-stack/starknet-connector versions` lists up to 0.4.0), so the build ran against a tarball packed from source:
+
+```bash
+# chipi-pay/sdks, branch feat/stark-snip12-trusted-wallets at ca4ed17 plus the
+# uncommitted connector 0.5 changes (passive calls in src/transport.ts);
+# package.json still says 0.4.0 because the version bump is not done yet.
+pnpm --filter @chipi-stack/starknet-connector build
+cd starknet-connector && pnpm pack --pack-destination <scratch>/packs
+
+# this tutorial, with package.json still at the old pin, so npm touches neither file:
+npm ci
+npm install --no-save <scratch>/packs/chipi-stack-starknet-connector-0.4.0.tgz
+sha1sum -c   # package.json and package-lock.json unchanged
+npx tsc --noEmit      # clean
+npm run build         # tsc -b && vite build: clean (only the existing >500 kB chunk warning)
+# then package.json pinned to ^0.5.0
+```
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| `tsc --noEmit` against the packed connector (0.5 source) | PASS | |
+| `vite build` against the packed connector | PASS | |
+| `vite build` on the 0.2.0 lockfile before the change | PASS | Baseline, same command |
+| Bramble connector in the picker, late injection, live connect / sign / execute | NOT RUN | No browser in the agent environment; needs Bramble installed |
+| Chipi passive calls answered without a popup next to Bramble | NOT RUN | Covered by the connector's own unit tests (`src/transport.test.ts`); not exercised in a browser here |
+
+### Pending before merge
+
+- **Publish `@chipi-stack/starknet-connector` 0.5.0, then run `npm install` here and commit the refreshed `package-lock.json`.** The lockfile in this branch still resolves 0.2.0; until 0.5.0 is on npm both `npm ci` and `npm install` stop with `ETARGET` (checked 2026-10-12).
+- A browser run with Bramble installed: connect, `signTypedData`, `execute`, deny (113), locked wallet (163), account switch.
 
 ---
 
