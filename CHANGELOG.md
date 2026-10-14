@@ -4,13 +4,15 @@ All notable changes to the `@chipi-stack` SDK packages are documented here.
 
 ## v14.17.0 (unreleased, date TBD)
 
-Bramble, the Starknet browser-extension wallet, becomes a first-class example. A user's own Starknet wallet (Bramble, Braavos, Ready, or another Chipi wallet) can co-own or guard their Chipi wallet: it keeps its key, approves with `wallet_signTypedData`, and Chipi relays gaslessly. Connect with Chipi sits quietly next to Bramble. Everything is additive: 14.16.x code keeps working unchanged.
+New SHHH wallets deploy **V8.5**, which enforces the threshold when one owner signs alone (V8.4 ignored it there; no mainnet wallet was affected, since none had a threshold above 1). Bramble, the Starknet browser-extension wallet, becomes a first-class example. A user's own Starknet wallet (Bramble, Braavos, Ready, or another Chipi wallet) can co-own or guard their Chipi wallet: it keeps its key, approves with `wallet_signTypedData`, and Chipi relays gaslessly. Connect with Chipi sits quietly next to Bramble. Everything else is additive: 14.16.x code keeps working unchanged.
 
 Walkthroughs: [tutorial 05](./tutorials/05-bramble-trusted-wallet) (sign in, fund, co-own, approve an agent session with Bramble) and [tutorial 03](./tutorials/03-connect-with-chipi) (Bramble next to Chipi in one connector list).
 
-> **The `STARK_SNIP12` verifier class is pending its mainnet declare.** Until it is declared, `isShhhVerifierDeclared(provider, "STARK_SNIP12")` returns `false`: don't propose it, a wallet would register a kind that can never verify.
+> **Both classes are on mainnet.** `ShhhAccount` V8.5 (`0x067828c8b82ac723b4adb141f9aa8975e296d8c11179d22bb8d7203b32abd96a`, block 16375744) and `StarkSnip12Verifier` (`0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, block 16377651), both declared 2026-10-14.
 
 ### `@chipi-stack/backend`
+
+- **New SHHH wallets deploy V8.5.** `createWallet` computes the address with V8.5, names that class in `prepare-creation`, and stops with `Not deploying` if the API answers with another class. Existing V8.4 wallets keep working and still resolve as `SHHH`. On-chain N-of-M needs V8.5: Chipi's API keeps V8.4 thresholds at 1 (`422 SHHH_THRESHOLD_UNSUPPORTED`). Record: [`v8-5-audit-entry.md`](https://github.com/haycarlitos/shhh-wallet-cairo/blob/v8-robust/docs/v8-5-audit-entry.md).
 
 - **Trusted wallets: the `STARK_SNIP12` signer kind.** A browser wallet never signs a raw hash: `wallet_signTypedData` always folds in its own address, so the wallet's `STARK` signer can't check it. `STARK_SNIP12` checks a STARK signature over an `Approval { Wallet, Hash }` typed data instead (domain `Shhh`, revision 1, `chainId` `SN_MAIN`, plain ASCII: Bramble's rules). A signature is good for one Chipi wallet, one chain and one transaction.
   - `starkSnip12ApprovalTypedData`, `starkSnip12ApprovalHash`, `starkSnip12PubkeyFelts`, `starkSnip12OwnerCommitment`, `buildStarkSnip12Envelope`, `verifyStarkSnip12Approval`.
@@ -42,7 +44,8 @@ Walkthroughs: [tutorial 05](./tutorials/05-bramble-trusted-wallet) (sign in, fun
 
 ### `@chipi-stack/types`, `@chipi-stack/shared`
 
-- `STARK_SNIP12` in `ShhhSignerKind`, its verifier class hash (`StarkSnip12Verifier`, `0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, pending declare) and gas overhead.
+- `STARK_SNIP12` in `ShhhSignerKind`, its verifier class hash (`StarkSnip12Verifier`, `0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, declared 2026-10-14) and gas overhead.
+- `WALLET_CLASS_HASHES.SHHH` is V8.5; V8.4 moves to `LEGACY_SHHH_CLASS_HASHES`.
 
 ### `@chipi-stack/core`
 

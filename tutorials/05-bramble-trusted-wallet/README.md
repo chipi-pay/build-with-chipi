@@ -11,7 +11,7 @@ Bramble is a browser-extension wallet (`window.starknet_bramble`). Braavos, Read
 
 Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.17.0** or later (14.16.0 for sign-in only). Starknet **mainnet** only.
 
-> **Steps 5 and 6 wait for a declare.** Bramble co-signs through a new signer kind, `STARK_SNIP12`, whose verifier class is **pending its mainnet declare**. Until it is declared the app says so and disables the proposal in step 5 (it checks with `isShhhVerifierDeclared`), and step 6 needs Bramble to be an owner first. Steps 2 to 4 work today.
+> Bramble co-signs through a signer kind, `STARK_SNIP12`, whose verifier class was declared on mainnet on 2026-10-14. The app still checks it with `isShhhVerifierDeclared` before step 5, so on a network without it the proposal stays disabled. New wallets (step 3) deploy SHHH V8.5.
 
 ## What runs where
 
@@ -159,7 +159,7 @@ A Chipi wallet starts with the `STARK` verifier only. One owner-signed transacti
 
 ```ts
 if (!(await isShhhVerifierDeclared(provider, "STARK_SNIP12"))) {
-  // not declared on mainnet yet: never propose it, it could never verify
+  // not declared on this network: never propose it, it could never verify
 }
 const calls = [];
 if ((await readVerifierClass(provider, walletAddress, "STARK_SNIP12")) === 0n) {
