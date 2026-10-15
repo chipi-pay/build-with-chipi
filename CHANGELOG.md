@@ -2,6 +2,130 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.17.0 (unreleased, date TBD)
+
+New SHHH wallets deploy **V8.5**, which enforces the threshold when one owner signs alone (V8.4 ignored it there; no mainnet wallet was affected, since none had a threshold above 1). Bramble, the Starknet browser-extension wallet, becomes a first-class example. A user's own Starknet wallet (Bramble, Braavos, Ready, or another Chipi wallet) can co-own or guard their Chipi wallet: it keeps its key, approves with `wallet_signTypedData`, and Chipi relays gaslessly. Connect with Chipi sits quietly next to Bramble. Everything else is additive: 14.16.x code keeps working unchanged.
+
+Walkthroughs: [tutorial 05](./tutorials/05-bramble-trusted-wallet) (sign in, fund, co-own, approve an agent session with Bramble) and [tutorial 03](./tutorials/03-connect-with-chipi) (Bramble next to Chipi in one connector list).
+
+> **Both classes are on mainnet.** `ShhhAccount` V8.5 (`0x067828c8b82ac723b4adb141f9aa8975e296d8c11179d22bb8d7203b32abd96a`, block 16375744) and `StarkSnip12Verifier` (`0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, block 16377651), both declared 2026-10-14.
+
+### `@chipi-stack/backend`
+
+- **New SHHH wallets deploy V8.5.** `createWallet` computes the address with V8.5, names that class in `prepare-creation`, and stops with `Not deploying` if the API answers with another class. Existing V8.4 wallets keep working and still resolve as `SHHH`. On-chain N-of-M needs V8.5: Chipi's API keeps V8.4 thresholds at 1 (`422 SHHH_THRESHOLD_UNSUPPORTED`). Record: [`v8-5-audit-entry.md`](https://github.com/haycarlitos/shhh-wallet-cairo/blob/v8-robust/docs/v8-5-audit-entry.md).
+
+- **Trusted wallets: the `STARK_SNIP12` signer kind.** A browser wallet never signs a raw hash: `wallet_signTypedData` always folds in its own address, so the wallet's `STARK` signer can't check it. `STARK_SNIP12` checks a STARK signature over an `Approval { Wallet, Hash }` typed data instead (domain `Shhh`, revision 1, `chainId` `SN_MAIN`, plain ASCII: Bramble's rules). A signature is good for one Chipi wallet, one chain and one transaction.
+  - `starkSnip12ApprovalTypedData`, `starkSnip12ApprovalHash`, `starkSnip12PubkeyFelts`, `starkSnip12OwnerCommitment`, `buildStarkSnip12Envelope`, `verifyStarkSnip12Approval`.
+  - `parseStarknetWalletSignature` reads `[r, s]` (Bramble's OpenZeppelin account, Braavos), `[1, 0, pubkey, r, s]` (Ready / Argent) and a Chipi wallet's own envelope. Multisig, hardware and passkey signers are refused.
+  - `resolveStarkSnip12Signer` finds which key signs for the external wallet from one approval signature: the key in the signature (Ready), `get_public_key` (Bramble), `get_signers` (Braavos), a Chipi wallet's owner record, or `wallet_deploymentData` for a new account that isn't deployed yet. It throws unless that key verifies the signature.
+- **`sdk.executeWithExternalSigner`**: run calls on a SHHH wallet approved by an external owner, relayed through Chipi's paymaster. Pass the wallet's `wallet_signTypedData` as `signTypedData`, and `signer: { address, starkPubkey }` to check the signature off-chain before relaying. Lower level: `prepareExternalOwnerExecution` / `submitExternalOwnerExecution` (`executeShhhWithExternalSigner` does both).
+
+  ```ts
+  const txHash = await sdk.executeWithExternalSigner({
+    params: {
+      walletAddress: chipiWallet.publicKey,
+      ownerIndex: brambleOwnerId,
+      calls: buildSessionSetupCalls(chipiWallet.publicKey, sessionConfig, spendingPolicies),
+      signTypedData: async (typedData) =>
+        (await bramble.request({ type: "wallet_signTypedData", params: typedData })) as string[],
+    },
+    bearerToken,
+  });
+  ```
+- **`executeShhhWithStarkKey`**: sign as a non-primary STARK owner, for the rotation that follows a guardian recovery.
+- **Verifier classes on a deployed wallet.** A wallet only verifies the kinds it has registered (a passkey wallet starts with `STARK`). `buildProposeAddVerifierClassCall` / `buildExecuteAddVerifierClassCall` add one through the 48-hour timelock, with no redeploy or upgrade. Propose it in the same owner-signed transaction as `buildProposeAddOwnerCall`, and execute it **before** `buildExecuteAddOwnerCall`, which checks the new key through the verifier. `isShhhVerifierDeclared` tells you whether the class exists on the network.
+- **Readers**: `readShhhOwners` (every owner and guardian, with its index), `readVerifierClass`, `readPendingRecovery`, and `parseOpProposedEvents` (op ids include the block time, so they come from the propose receipt).
+- **Sign in with Starknet accepts mainnet's chain id in felt form.** `verifyStarknetSignIn` takes the domain `chainId` as `SN_MAIN` or its felt (`0x534e5f4d41494e`, any padding or case, or decimal), since wallets echo either and SNIP-12 hashes them the same. Any other chain is still `WRONG_CHAIN`.
+
+### `@chipi-stack/chipi-react` (and `nextjs`)
+
+- **`useExternalSignerExecute()`**: `sdk.executeWithExternalSigner` as a mutation hook, re-exported by `@chipi-stack/nextjs`. Returns the tx hash: wait for it.
+- `useChipiWalletObject` answers `wallet_deploymentData` with `116` ("deployment data not available") instead of always `115`; `115` only when the host passes `isDeployed: true`.
+
+### `@chipi-stack/types`, `@chipi-stack/shared`
+
+- `STARK_SNIP12` in `ShhhSignerKind`, its verifier class hash (`StarkSnip12Verifier`, `0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, declared 2026-10-14) and gas overhead.
+- `WALLET_CLASS_HASHES.SHHH` is V8.5; V8.4 moves to `LEGACY_SHHH_CLASS_HASHES`.
+
+### `@chipi-stack/core`
+
+- x402: `X402Client` reads an Argent / Ready signature (`[1, 0, pubkey, r, s]`) as `r = sig[3]`, `s = sig[4]`. It read the first two felts, so those payments carried `r = 1, s = 0` and could never verify. `[r, s]` (OpenZeppelin, Braavos, Bramble) is unchanged.
+
+### `@chipi-stack/starknet-connector` 0.5.0
+
+- **Chipi next to Bramble.** Wallet scanners (get-starknet v4 `getAuthorizedWallets` / `getLastConnectedWallet`) call passive methods on every `window.starknet*` object at page load. Until the user connects, Chipi now answers them itself instead of trying to open its popup outside a click: `wallet_getPermissions` → `[]`, `wallet_requestAccounts` with `silent_mode: true` → `[]`, `wallet_requestChainId` → `SN_MAIN`.
+- `chipi({ transport: { requestTimeoutMs } })` type-checks without repeating `walletUrl`.
+- **Upgrade with `^0.5.0`.** On a `0.x` version a caret never crosses a minor: `^0.4.0` stays on 0.4.
+
+```tsx
+import { InjectedConnector } from "@starknet-react/core";
+import { chipi } from "@chipi-stack/starknet-connector";
+
+const connectors = [
+  chipi(),
+  // starknet-react 5 has no bramble() and injected() takes only { id }
+  new InjectedConnector({ options: { id: "bramble", name: "Bramble" } }),
+];
+```
+
+### Docs
+
+- New [Trusted wallets](https://docs.chipipay.com/sdk/guides/trusted-wallets) guide (co-owner vs guardian, propose → 48 h → execute, recovery) and v14.17.0 release notes, with Bramble as the example wallet.
+- [Sign in with Starknet](https://docs.chipipay.com/sdk/guides/sign-in-with-starknet): Bramble end to end (late injection, click-only prompts, mainnet check, deployment data, error codes 113 / 163), `MALFORMED` and both sources of `ADDRESS_MISMATCH`.
+- Recovery, threshold and multi-owner governance pages corrected against the contract: recovery **adds** an owner and never replaces one; `cancel_recovery` takes the cancelling owner's id and guardians can't cancel; every `execute_*` call is permissionless after its timelock; a new signer kind needs its verifier class first.
+- Connector docs show Chipi next to Bramble, Ready and Braavos and list every error the connector returns. SignerAdapter and TxBuilder pages no longer show a browser wallet signing a raw hash.
+
+### Verification
+
+Unit tests in `chipi-pay/sdks` cover the approval hash against the Cairo fixture, every signature shape, `resolveStarkSnip12Signer` for OpenZeppelin, Argent, undeployed OpenZeppelin, Braavos and Chipi wallets, the external-owner relay calldata, the verifier-class builders, `parseOpProposedEvents`, `readShhhOwners`, `isShhhVerifierDeclared` and the connector's passive answers. Tutorials 03 and 05 type-check and build against tarballs packed from the release branch; tutorial 05's sign-in, JWT and key resolution were exercised locally with a generated undeployed OpenZeppelin account. On 2026-10-12 `STARK_SNIP12` read as not declared on mainnet. Pending: a live run with Bramble on mainnet after the publish and the declare.
+
+## v14.16.0 (2026-10-11)
+
+Sign in with Starknet, a deny-by-default Connect with Chipi wallet object, and dApp sessions that carry their spend caps. Bramble, Braavos and Ready users can sign in with the wallet they already have.
+
+### `@chipi-stack/backend`
+
+- **Sign in with Starknet.** `createStarknetSignInTypedData` builds a SNIP-12 login message with a one-time nonce (revision 1, `SN_MAIN`, single-line printable ASCII: what every wallet, Bramble included, accepts). `verifyStarknetSignIn` checks chain, domain, URI, nonce, expiry and the signature, rebuilding the typed data from its message so a client can't swap in other types or a testnet domain.
+  - **Deployed accounts** answer through their own `is_valid_signature`; only `'VALID'` counts (an account answering `0` or reverting is refused).
+  - **Accounts not deployed yet** (new Bramble and Ready accounts: OpenZeppelin 3.0, Argent 0.4 without a guardian) are checked off-chain from `wallet_deploymentData`: known class, address matches the constructor, owner key signed. Anything else gets `UNSUPPORTED_ACCOUNT_CLASS`.
+  - Lower level: `isValidStarknetSignature` and `verifyUndeployedStarknetSignature`.
+
+  ```ts
+  const result = await verifyStarknetSignIn({
+    typedData, // rebuilt from the nonce you issued
+    signature, // from bramble.request({ type: "wallet_signTypedData", params: typedData })
+    provider,
+    expected: { domain: "app.example.com", uri: "https://app.example.com", nonce },
+    deploymentData, // bramble.request({ type: "wallet_deploymentData" }) for a new account
+  });
+  ```
+- **x402 facilitator.** With a `provider`, the signature check accepts only `'VALID'` and names an undeployed payer. A SHHH payment must sign exactly one `transfer` of the declared `amount` of `asset` to `toAddress`; before, any non-empty call list passed, so a payer could declare 1 USDC and sign 1 base unit. A malformed payload is refused instead of throwing.
+
+### `@chipi-stack/chipi-react` (and `nextjs`)
+
+- **Connect with Chipi is deny-by-default.** `createChipiWindowObject` / `useChipiWalletObject` refuse every approval without `requestApproval` (they auto-approved before). `wallet_requestAccounts` asks for a connect approval once per wallet object; `silent_mode` and `wallet_getPermissions` reveal nothing before it. `wallet_signTypedData` refuses a domain for another chain.
+- **dApp sessions carry their caps.** A dApp-proposed session with `spendCaps` is registered with its spending policies in one owner-signed transaction (`sessions.setupSession`). `spendCaps` also takes `{ token, maxPerCall, maxPerWindow, windowSeconds }`; a cap of 0 (unlimited on-chain) is refused.
+- `wallet_deploymentData` answers `115` only when the host reports the account deployed; other failures are no longer disguised as "already deployed".
+
+### `@chipi-stack/core` 0.6.1
+
+- x402: the payment typed data declares SNIP-12 revision 1. Without it starknet.js refused to hash it, so accounts couldn't sign payments.
+
+### `@chipi-stack/starknet-connector` 0.4.0
+
+- **Hardening.** Messages that don't come from the wallet window the connector opened are ignored, before it opens and after it closes. Requests time out (`transport.requestTimeoutMs`, default 120 s) with `REQUEST_TIMEOUT`. A request after the user closed the wallet window rejects with `POPUP_CLOSED` instead of opening a popup outside a click.
+- Account and network changes emit starknet-react `change` / `disconnect` events. `connect({ chainIdHint })` rejects non-mainnet with `UNSUPPORTED_CHAIN`. `disconnect()` removes the window registration.
+- **Wallet Standard.** `registerChipiStandardWallet()` / `createChipiStandardWallet()` make Chipi discoverable by get-starknet v6 and `@starknet-start/react`.
+
+### Docs
+
+- New [Sign in with Starknet](https://docs.chipipay.com/sdk/guides/sign-in-with-starknet) guide.
+- Connector security and API pages, and the transfer and call-any-contract snippets, now match the code; the x402 server example passes a `provider`.
+
+### Verification
+
+Unit tests cover SIWS typed data hashing under starknet.js, the ASCII, nonce and time guards, deployed accounts (only `'VALID'` accepted), undeployed OpenZeppelin `[r, s]` and Argent `[1, 0, pub, r, s]` signatures with generated keys, address mismatch, unknown class and guardian refusal, and every wrong domain, URI, nonce or chain. The account classes are the ones the Bramble extension 0.10.5 deploys. Live wallet signatures were not part of this release's checks.
+
 ## v14.15.1 (2026-10-06)
 
 ### `@chipi-stack/backend`

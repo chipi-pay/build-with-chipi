@@ -19,6 +19,8 @@ Developer hub for **@chipi-stack** — the SDK suite for building gasless Starkn
 | [`@chipi-stack/shared`](https://www.npmjs.com/package/@chipi-stack/shared) | ![npm](https://img.shields.io/npm/v/@chipi-stack/shared) | Shared utilities, constants, and helpers |
 | [`@chipi-stack/starknet-connector`](https://www.npmjs.com/package/@chipi-stack/starknet-connector) | ![npm](https://img.shields.io/npm/v/@chipi-stack/starknet-connector) | "Connect with Chipi" — a starknet-react connector so any Starknet dApp connects to a Chipi wallet (passkey, gasless, no extension) |
 
+The tutorials target **14.17.0** for the `@chipi-stack/*` SDK packages and **0.5.0** for `@chipi-stack/starknet-connector` (being released, see the [CHANGELOG](./CHANGELOG.md)). The badges show what npm serves today.
+
 ## What you can build
 
 - **Mobile wallets** with Face ID / Touch ID — users never see a seed phrase
@@ -65,8 +67,9 @@ Runnable, end-to-end examples in [`tutorials/`](./tutorials):
 |---|----------|---------------|
 | 01 | [Next.js + Clerk wallet](./tutorials/01-nextjs-clerk-wallet) | A gasless web wallet with passkey auth via Clerk |
 | 02 | [Expo + Clerk mobile wallet](./tutorials/02-expo-clerk-mobile-wallet) | The same wallet as a React Native / Expo mobile app |
-| 03 | [Connect with Chipi](./tutorials/03-connect-with-chipi) | A Starknet **dApp** that connects to Chipi wallets — one-line starknet-react connector, gasless signing |
+| 03 | [Connect with Chipi](./tutorials/03-connect-with-chipi) | A Starknet **dApp** that connects to Chipi wallets with a one-line starknet-react connector (gasless signing), next to Bramble, Ready and Braavos in the same picker |
 | 04 | [Agent with a session key and a passkey](./tutorials/04-agent-session-passkey) | A server-side AI agent that trades from a self-custodial passkey wallet inside on-chain caps: one prompt to hire it, one to stop it |
+| 05 | [Bramble as a trusted wallet](./tutorials/05-bramble-trusted-wallet) | Sign in with Bramble, fund a Chipi passkey wallet from it, make Bramble a co-owner, and let it approve a capped agent session (14.17.0) |
 
 ## Documentation
 
