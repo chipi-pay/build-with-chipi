@@ -6,7 +6,7 @@
 **Auth Provider:** N/A — this tutorial builds the *dApp side* of a wallet
 connection, not an app with its own auth. The Chipi wallet's own auth
 (Clerk + passkey) lives behind the popup, on wallet.chipipay.com.
-**SDK Version:** `@chipi-stack/starknet-connector@^0.5.0` (pinned 2026-10-12, pre-release; first report against `0.1.4`)
+**SDK Version:** `@chipi-stack/starknet-connector@^0.5.0` (published 2026-10-14; first report against `0.1.4`)
 **Tutorial Issue:** N/A (migrated from `chipi-pay/sdks/examples/connect-with-chipi`,
 which is private — this tutorial is its public, canonical home)
 
@@ -26,7 +26,7 @@ which is private — this tutorial is its public, canonical home)
 
 ### How it was checked
 
-0.5.0 is not on npm yet (`npm view @chipi-stack/starknet-connector versions` lists up to 0.4.0), so the build ran against a tarball packed from source:
+On 2026-10-12, 0.5.0 was not on npm yet (`npm view @chipi-stack/starknet-connector versions` listed up to 0.4.0), so the build ran against a tarball packed from source:
 
 ```bash
 # chipi-pay/sdks, branch feat/stark-snip12-trusted-wallets at ca4ed17 plus the
@@ -52,9 +52,17 @@ npm run build         # tsc -b && vite build: clean (only the existing >500 kB c
 | Bramble connector in the picker, late injection, live connect / sign / execute | NOT RUN | No browser in the agent environment; needs Bramble installed |
 | Chipi passive calls answered without a popup next to Bramble | NOT RUN | Covered by the connector's own unit tests (`src/transport.test.ts`); not exercised in a browser here |
 
-### Pending before merge
+### Release check (2026-10-15)
 
-- **Publish `@chipi-stack/starknet-connector` 0.5.0, then run `npm install` here and commit the refreshed `package-lock.json`.** The lockfile in this branch still resolves 0.2.0; until 0.5.0 is on npm both `npm ci` and `npm install` stop with `ETARGET` (checked 2026-10-12).
+`@chipi-stack/starknet-connector` 0.5.0 was published on 2026-10-14. `npm install` from the registry refreshed `package-lock.json`, which now resolves 0.5.0 (it resolved 0.2.0) with no local tarballs.
+
+| Check | Result |
+|-------|--------|
+| `npx tsc --noEmit` against the published 0.5.0 | PASS |
+| `npm run build` (`tsc -b && vite build`) against the published 0.5.0 | PASS (only the existing >500 kB chunk warning) |
+
+### Still pending
+
 - A browser run with Bramble installed: connect, `signTypedData`, `execute`, deny (113), locked wallet (163), account switch.
 
 ---

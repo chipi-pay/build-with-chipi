@@ -4,14 +4,22 @@
 **Date:** 2026-10-12
 **Framework:** Next.js 16.2.1 (App Router)
 **Auth Provider:** Custom: Sign in with Starknet (`verifyStarknetSignIn`) + an RS256 JWT served at `/api/auth/jwks`
-**SDK Version:** `@chipi-stack/nextjs` / `@chipi-stack/backend` `^14.17.0` (pre-release: checked against tarballs packed from source, see below)
+**SDK Version:** `@chipi-stack/nextjs` / `@chipi-stack/backend` `^14.17.0` (published 2026-10-14; first checked against tarballs packed from source, see below)
 **Tutorial Issue:** N/A
 
 ---
 
-## How it was checked
+## Release check (2026-10-15)
 
-14.17.0 is not on npm yet (`latest` is 14.16.0 on 2026-10-12). The SDK was built and packed from `chipi-pay/sdks`, branch `feat/stark-snip12-trusted-wallets`, commit `ca4ed17` plus the uncommitted 14.17.0 work in that tree on 2026-10-12 (among others `backend/src/shhh/verifier-classes.ts`, which adds `isShhhVerifierDeclared`). The packages still carry their 14.16.0 version numbers: the version bump comes with the release.
+14.17.0 was published on 2026-10-14, and the `StarkSnip12Verifier` class was declared on mainnet the same day (class `0x017884125977631bee198b34cd3e3fcf975a543e453c8b996a818910a964b5e`, block 16,377,651).
+
+- `npm install` from the registry generated the committed `package-lock.json`: `@chipi-stack/backend`, `nextjs`, `chipi-react`, `shared` and `types` at 14.17.0, `core` at 0.6.2, `chipi-passkey` at 2.3.0, no local tarballs.
+- `npx tsc --noEmit`, `npx eslint .` and `next build` pass against it (build with a well-formed placeholder `NEXT_PUBLIC_CHIPI_API_KEY` and `CHIPI_API_SECRET_KEY`).
+- `isShhhVerifierDeclared` from the published 14.17.0, against mainnet: `STARK_SNIP12` → `true`, `STARK` → `true`. Step 5 is enabled.
+
+## How it was first checked (pre-release)
+
+On 2026-10-12, 14.17.0 was not on npm yet (`latest` was 14.16.0). The SDK was built and packed from `chipi-pay/sdks`, branch `feat/stark-snip12-trusted-wallets`, commit `ca4ed17` plus the uncommitted 14.17.0 work in that tree on 2026-10-12 (among others `backend/src/shhh/verifier-classes.ts`, which adds `isShhhVerifierDeclared`). The packages still carry their 14.16.0 version numbers: the version bump comes with the release.
 
 ```bash
 # chipi-pay/sdks
@@ -29,7 +37,7 @@ NEXT_PUBLIC_CHIPI_API_KEY=pk_prod_<32 chars> npx next build
 # then: package.json restored to the ^14.17.0 pins, the generated package-lock.json deleted
 ```
 
-**No `package-lock.json` is committed.** A lockfile generated against local tarballs would point at paths that exist only on the machine that made them, and `^14.17.0` can't resolve from npm until the release. After the release, run `npm install` and commit the lockfile, as tutorial 04 does. Until then `npm install` stops with `ETARGET`.
+No lockfile was committed from that run: one generated against local tarballs would point at paths that exist only on the machine that made them. The committed lockfile comes from the registry after the release (above).
 
 | Check | Result | Notes |
 |-------|--------|-------|
@@ -41,7 +49,7 @@ NEXT_PUBLIC_CHIPI_API_KEY=pk_prod_<32 chars> npx next build
 | Tampered session cookie | PASS | `/api/auth/session` answers `address: null` |
 | JWT for Chipi | PASS | `/api/auth/token`: RS256, `kid` found in `/api/auth/jwks`, signature verifies with that key, `sub` = Bramble address, `iss` = `aud` = `APP_URL`, 15 minutes |
 | `resolveStarkSnip12Signer` for a new Bramble account | PASS | Same generated undeployed account signs `starkSnip12ApprovalTypedData`; the key comes from the deployment data with no RPC call. Domain is `{ name: "Shhh", version: "1", chainId: "SN_MAIN", revision: "1" }` |
-| `isShhhVerifierDeclared` on mainnet | PASS | 2026-10-12: `STARK_SNIP12` → `false` (pending declare), `STARK` → `true`. Step 5 shows the warning and stays disabled |
+| `isShhhVerifierDeclared` on mainnet | PASS | 2026-10-12: `STARK_SNIP12` → `false` (before the declare), `STARK` → `true`; step 5 showed the warning and stayed disabled. 2026-10-15: `STARK_SNIP12` → `true` |
 
 ## Features Validation
 
@@ -51,8 +59,8 @@ NEXT_PUBLIC_CHIPI_API_KEY=pk_prod_<32 chars> npx next build
 | JWT accepted by Chipi (dashboard Better Auth provider) | NOT RUN | Needs the JWKS registered for a real org |
 | Wallet creation with passkey (`usePasskey: true`) | NOT RUN | Needs a PRF-capable passkey in a browser |
 | Fund from Bramble (`wallet_addInvokeTransaction`, `waitForTransaction`) | NOT RUN | Needs Bramble with USDC and STRK on mainnet |
-| Propose verifier class + owner (passkey) | NOT RUN | Blocked on the `STARK_SNIP12` mainnet declare |
-| Execute both after 48 h | NOT RUN | Blocked on the declare, then 48 hours |
+| Propose verifier class + owner (passkey) | NOT RUN | `STARK_SNIP12` declared 2026-10-14; needs the passkey wallet |
+| Execute both after 48 h | NOT RUN | Needs the proposal, then 48 hours |
 | Bramble approves a capped session (`useExternalSignerExecute`) | NOT RUN | Needs Bramble as co-owner |
 | Bramble revokes it | NOT RUN | Same |
 
@@ -85,16 +93,16 @@ None in the SDK. Notes for the release:
 
 | Note | Repo | Issue | Status |
 |------|------|-------|--------|
-| `isShhhVerifierDeclared` (`backend/src/shhh/verifier-classes.ts`) was uncommitted in the SDK tree packed here. This tutorial imports it: it must ship in 14.17.0 | chipi-pay/sdks | — | Open |
-| `@chipi-stack/*` package versions still read 14.16.0 in the source tree | chipi-pay/sdks | — | Expected until the release PR |
+| `isShhhVerifierDeclared` (`backend/src/shhh/verifier-classes.ts`) was uncommitted in the SDK tree packed here. This tutorial imports it: it must ship in 14.17.0 | chipi-pay/sdks | — | Shipped in 14.17.0 |
+| `@chipi-stack/*` package versions still read 14.16.0 in the source tree | chipi-pay/sdks | — | Resolved by the 14.17.0 release |
 
-## Pending (live run on mainnet, after publish + declare)
+## Pending (live run on mainnet)
 
-1. Publish 14.17.0; `npm install` here; commit `package-lock.json`; rerun `tsc`, `eslint`, `next build`.
+1. ~~Publish 14.17.0; `npm install` here; commit `package-lock.json`; rerun `tsc`, `eslint`, `next build`.~~ Done 2026-10-15.
 2. Register `${APP_URL}/api/auth/jwks` in the Chipi dashboard and confirm Chipi accepts the token (`useChipiWallet` loads).
 3. Sign in with a real Bramble account, once new (undeployed) and once deployed.
 4. Create the passkey wallet; fund it with 1 USDC from Bramble.
-5. After the `STARK_SNIP12` declare: propose, wait 48 h, execute; Bramble appears in `readShhhOwners`.
+5. Propose (`STARK_SNIP12` is declared), wait 48 h, execute; Bramble appears in `readShhhOwners`.
 6. Bramble approves the session (one signature), the server reads it active; Bramble revokes it.
 
 | Step | Tx hash | Result |
@@ -110,12 +118,12 @@ None in the SDK. Notes for the release:
 ```bash
 git clone https://github.com/chipi-pay/build-with-chipi
 cd build-with-chipi/tutorials/05-bramble-trusted-wallet
-npm install    # after the 14.17.0 release
+npm install
 npm run build  # with NEXT_PUBLIC_CHIPI_API_KEY set
 ```
 
-- [ ] Clean install works: no, until 14.17.0 is on npm (`ETARGET`)
-- [x] Build passes (against the packed pre-release)
+- [x] Clean install works (from the registry, 2026-10-15)
+- [x] Build passes (against the published 14.17.0)
 - [x] App runs at localhost (`next start`, auth routes exercised)
 
 ## Recording
