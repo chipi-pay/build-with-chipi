@@ -19,7 +19,7 @@ Developer hub for **@chipi-stack** — the SDK suite for building gasless Starkn
 | [`@chipi-stack/shared`](https://www.npmjs.com/package/@chipi-stack/shared) | ![npm](https://img.shields.io/npm/v/@chipi-stack/shared) | Shared utilities, constants, and helpers |
 | [`@chipi-stack/starknet-connector`](https://www.npmjs.com/package/@chipi-stack/starknet-connector) | ![npm](https://img.shields.io/npm/v/@chipi-stack/starknet-connector) | "Connect with Chipi" — a starknet-react connector so any Starknet dApp connects to a Chipi wallet (passkey, gasless, no extension) |
 
-The tutorials target **14.17.0** for the `@chipi-stack/*` SDK packages and **0.5.0** for `@chipi-stack/starknet-connector` (being released, see the [CHANGELOG](./CHANGELOG.md)). The badges show what npm serves today.
+The tutorials target **14.18.0** for the `@chipi-stack/*` SDK packages (tutorial 06; being released, see the [CHANGELOG](./CHANGELOG.md)), **14.17.0** for tutorials 03–05, and **0.5.0** for `@chipi-stack/starknet-connector`. The badges show what npm serves today.
 
 ## What you can build
 
@@ -28,6 +28,7 @@ The tutorials target **14.17.0** for the `@chipi-stack/*` SDK packages and **0.5
 - **AI agent payments** — autonomous pay-per-use APIs with x402 protocol
 - **Crypto checkout buttons** — drop-in React components for e-commerce
 - **Remittance platforms** — cross-border USDC transfers on Starknet L2
+- **Fund from any chain** — bring USDC from Base (or Arbitrum, Optimism, Polygon, Ethereum) into a Chipi wallet with Circle's CCTP, and withdraw back out
 - **SKU marketplaces** — airtime top-ups, bill pay, gift cards
 - **Gaming reward systems** — on-chain rewards without users knowing it's crypto
 - **SaaS with wallet-per-user** — server-side wallet provisioning via backend SDK
@@ -70,6 +71,7 @@ Runnable, end-to-end examples in [`tutorials/`](./tutorials):
 | 03 | [Connect with Chipi](./tutorials/03-connect-with-chipi) | A Starknet **dApp** that connects to Chipi wallets with a one-line starknet-react connector (gasless signing), next to Bramble, Ready and Braavos in the same picker |
 | 04 | [Agent with a session key and a passkey](./tutorials/04-agent-session-passkey) | A server-side AI agent that trades from a self-custodial passkey wallet inside on-chain caps: one prompt to hire it, one to stop it |
 | 05 | [Bramble as a trusted wallet](./tutorials/05-bramble-trusted-wallet) | Sign in with Bramble, fund a Chipi passkey wallet from it, make Bramble a co-owner, and let it approve a capped agent session (14.17.0) |
+| 06 | [Fund from Base](./tutorials/06-fund-from-base) | A passkey wallet funded with USDC from Base through Circle's CCTP: both speeds and prices shown first, one hook, close the page while it arrives, follow it from any device (14.18.0) |
 
 ## Documentation
 
