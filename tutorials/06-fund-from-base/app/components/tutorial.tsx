@@ -130,7 +130,7 @@ export function Tutorial() {
                   <p className="text-sm text-zinc-400">Pick a Base wallet first (step 3).</p>
                 )}
               </Step>
-              <Step n={5} title="Follow it, from any device">
+              <Step n={5} title="Follow it, even after closing the page">
                 <DepositProgress chipiWallet={wallet.publicKey} />
               </Step>
             </>

@@ -11,8 +11,9 @@ import { clearPendingDeposit, parsePendingDeposit, readPendingDepositRaw, subscr
 /**
  * Follows the deposit remembered for this wallet by its burn hash: PENDING
  * while Circle attests and Chipi's delivery runs, MINTED with the Starknet
- * transaction. Reload, close the tab, open it on your phone: the burn hash is
- * all it needs. Also shows the Chipi wallet's USDC on Starknet.
+ * transaction. Reload or close the tab: the burn hash in this browser's
+ * localStorage is all it needs (another device needs the hash from your own
+ * server). Also shows the Chipi wallet's USDC on Starknet.
  */
 export function DepositProgress({ chipiWallet }: { chipiWallet: string }) {
   const raw = useSyncExternalStore(subscribePendingDeposit, () => readPendingDepositRaw(chipiWallet), () => null);

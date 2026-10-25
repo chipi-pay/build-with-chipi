@@ -6,7 +6,7 @@ Your users' USDC is on Base, not on Starknet. This app brings it over in one hoo
 2. **Create the wallet.** A Chipi passkey wallet on Starknet.
 3. **Pick a Base wallet.** MetaMask, Rabby, Coinbase Wallet… (EIP-6963).
 4. **Bring USDC.** Quote both speeds first, then one hook: switch to Base, approve + burn, register with Chipi, mint on Starknet.
-5. **Follow it.** From the burn hash, on any device. You can close the page.
+5. **Follow it.** From the burn hash, after a reload or a closed tab. The deposit completes without the page.
 
 Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.18.0** or later. Starknet **mainnet** and Base **mainnet** only.
 
@@ -119,7 +119,7 @@ What the SDK does, in order (`onStatus` reports each step with how long it usual
 
 `depositAsync` resolves with `{ burnTxHash, mintTxHash, quote, startedAt, batched }`. If it rejects with a `CrossChainDepositError`, the burn already happened: the error carries `burnTxHash` and `sourceDomain`, and step 5 of the app follows it.
 
-## 6. Follow it, from any device
+## 6. Follow it, even after closing the page
 
 [`app/components/deposit-progress.tsx`](./app/components/deposit-progress.tsx). The burn hash is kept per Chipi wallet in `localStorage` ([`lib/deposit-store.ts`](./lib/deposit-store.ts)) the moment it exists, and followed with:
 
@@ -128,7 +128,7 @@ const { data } = useCctpDepositStatus({ burnTxHash, getBearerToken: getChipiToke
 // data.status: "PENDING" | "MINTED" (data.mintTx) | "FAILED" | "UNREGISTERED"
 ```
 
-It polls chipi-back every 15 seconds while `PENDING` and stops on anything else. Reload, close the tab, come back after lunch: the hash is all it needs. In production keep the hash on your server too; `localStorage` is one browser.
+It polls chipi-back every 15 seconds while `PENDING` and stops on anything else. Reload, close the tab, come back after lunch: the hash is all it needs. `localStorage` is one browser, though: to follow a deposit from another device, keep the hash on your server with the user's record and hand it to `useCctpDepositStatus` there. The deposit itself never depends on the browser: Chipi has the hash from `registerCctpDeposit`.
 
 ## 7. Going to production
 
