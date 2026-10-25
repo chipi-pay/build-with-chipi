@@ -62,7 +62,16 @@ export function FundFromBase({ evm, chipiWallet }: { evm: ConnectedEvmWallet; ch
     };
   }, [readBalance]);
 
+  // One record per Chipi wallet (lib/deposit-store.ts): a second deposit would
+  // replace the hash step 5 is following. Finish or forget it first.
+  const inFlight = () => {
+    if (!readPendingDepositRaw(chipiWallet)) return false;
+    setError("A deposit is already in flight for this wallet. Wait for it in step 5, or forget it there, before starting another.");
+    return true;
+  };
+
   const getQuotes = async () => {
+    if (inFlight()) return;
     const units = parseUsdcInput(amount);
     if (!units) return setError("Enter an amount of USDC, up to 6 decimals.");
     if (balance !== null && units > balance) return setError(`${evm.wallet.info.name} holds ${formatUnits(balance, USDC_DECIMALS)} USDC on Base.`);
@@ -79,7 +88,7 @@ export function FundFromBase({ evm, chipiWallet }: { evm: ConnectedEvmWallet; ch
   };
 
   const deposit = async (finality: CctpFinality) => {
-    if (!quotes) return;
+    if (!quotes || inFlight()) return;
     const q = quotes[finality];
     setError(null);
     try {

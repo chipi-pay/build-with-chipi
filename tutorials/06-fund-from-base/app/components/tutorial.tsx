@@ -26,6 +26,7 @@ export function Tutorial() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [evm, setEvm] = useState<ConnectedEvmWallet | null>(null);
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,9 +49,17 @@ export function Tutorial() {
 
   const start = async () => {
     setStarting(true);
-    const res = await fetch("/api/auth/anonymous", { method: "POST" });
-    setUserId(((await res.json()) as { userId: string }).userId);
-    setStarting(false);
+    setStartError(null);
+    try {
+      const res = await fetch("/api/auth/anonymous", { method: "POST" });
+      // A 500 here is usually APP_SECRET missing or shorter than 32 characters.
+      if (!res.ok) throw new Error(`The server could not start a session (${res.status}). Check APP_SECRET and APP_JWT_PRIVATE_KEY in .env.local.`);
+      setUserId(((await res.json()) as { userId: string }).userId);
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setStarting(false);
+    }
   };
 
   const signOut = async () => {
@@ -77,6 +86,7 @@ export function Tutorial() {
           <button onClick={start} disabled={starting} className="w-fit rounded bg-white px-4 py-2 text-black disabled:opacity-60">
             {starting ? "Starting…" : "Start"}
           </button>
+          {startError && <p className="text-sm text-red-400">{startError}</p>}
         </Step>
       )}
 
