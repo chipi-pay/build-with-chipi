@@ -2,7 +2,7 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.18.0 (unreleased, date TBD)
+## v14.18.0 (2026-10-26)
 
 Fund a Chipi wallet from any chain. A user with native USDC on **Base** (or Arbitrum, Optimism, Polygon or Ethereum) brings it into their Chipi wallet on Starknet through Circle's Cross-Chain Transfer Protocol (CCTP V2), and sends it back out, with one hook each: USDC is burned on one chain and minted on the other by Circle, no bridge token and no custodian. The app shows both speeds and prices before anything is signed, the Starknet mint is paid by Chipi, and a deposit completes even if the user closes the page. Everything is additive: 14.17.x code keeps working unchanged.
 

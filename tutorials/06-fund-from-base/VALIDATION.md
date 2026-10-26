@@ -1,15 +1,26 @@
 # Validation Report — Tutorial 06: Fund a Chipi wallet from Base
 
 **Tester:** Claude (agent session). Not yet reviewed.
-**Date:** 2026-10-25
+**Date:** 2026-10-25 (pre-release), 2026-10-26 (against the published 14.18.0)
 **Framework:** Next.js 16.2.1 (App Router)
 **Auth Provider:** Custom: anonymous account in a signed cookie + an RS256 JWT served at `/api/auth/jwks`
-**SDK Version:** `@chipi-stack/nextjs` / `@chipi-stack/backend` `^14.18.0` (not yet published; checked against tarballs packed from source, see below)
+**SDK Version:** `@chipi-stack/nextjs` / `@chipi-stack/backend` `^14.18.0` (published 2026-10-26; `package-lock.json` resolves 14.18.0 from the registry. First checked against tarballs packed from source, see below)
 **Tutorial Issue:** N/A
 
 ---
 
-## How it was checked (pre-release)
+## Against the published 14.18.0 (2026-10-26)
+
+`npm install` with the `^14.18.0` pins resolved every `@chipi-stack/*` package to 14.18.0 from npm; that `package-lock.json` is the one committed.
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| `npm install` | PASS | Registry packages, no overrides |
+| `tsc --noEmit` | PASS | |
+| `eslint .` | PASS | |
+| `next build` | PASS | With a well-formed `NEXT_PUBLIC_CHIPI_API_KEY` |
+
+## How it was first checked (pre-release)
 
 On 2026-10-25, 14.18.0 was not on npm yet (`latest` was 14.17.2). The SDK was built and packed from `chipi-pay/sdks`, branch `feat/cross-chain-usdc`, commit `ee2b454` ([chipi-pay/sdks#434](https://github.com/chipi-pay/sdks/pull/434)). The packages still carry their 14.17.2 version numbers: the version bump comes with the release.
 
@@ -74,8 +85,8 @@ None in the SDK.
 
 ## Pending (live run on mainnet)
 
-1. Publish 14.18.0; `npm install` here; commit `package-lock.json`; rerun `tsc`, `eslint`, `next build`.
-2. Deploy chipi-back #423 (register-burn ownership check; the delivery task re-attests) and chipi-cctp-relayer #2.
+1. ~~Publish 14.18.0; `npm install` here; commit `package-lock.json`; rerun `tsc`, `eslint`, `next build`.~~ Done 2026-10-26 (table above).
+2. ~~Merge chipi-back #423 (register-burn ownership check; the delivery task re-attests) and chipi-cctp-relayer #2.~~ Merged 2026-10-26; chipi-back deployed from main, the relayer is deployed by hand.
 3. Register `${APP_URL}/api/auth/jwks` in the Chipi dashboard; create the passkey wallet.
 4. Deposit 1 USDC from Base at standard speed, close the tab after the wallet confirms, come back: step 5 shows MINTED with the Starknet transaction; the Chipi wallet's USDC rose by 1.
 5. Deposit 1 USDC fast: Circle's `feeExecuted` on the message equals the quoted fee; the wallet receives 1 − fee.
@@ -94,8 +105,8 @@ npm install
 npm run build  # with NEXT_PUBLIC_CHIPI_API_KEY set
 ```
 
-- [ ] Clean install works (after the 14.18.0 release)
-- [x] Build passes (against tarballs packed from the release branch, 2026-10-25)
+- [x] Clean install works (14.18.0 from the registry, 2026-10-26)
+- [x] Build passes (against the packed release branch on 2026-10-25, and against the published 14.18.0 on 2026-10-26)
 - [ ] App runs at localhost (after the live run)
 
 ## Recording
