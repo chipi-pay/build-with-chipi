@@ -2,7 +2,116 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
-## v14.17.0 (unreleased, date TBD)
+## v14.19.0 (2026-10-26)
+
+Solana joins cross-chain USDC, as an optional entry point: `@chipi-stack/backend/solana`. It needs `@solana/web3.js` (an optional peer dependency), so apps that never touch Solana install nothing new. Everything else is unchanged from 14.18.0; the same `registerCctpDeposit`, `useCctpDepositStatus`, `recordCrossChainWithdrawal` and `finalizeCrossChainWithdrawal` carry a Solana burn the way they carry a Base one.
+
+### `@chipi-stack/backend/solana`
+
+- **Deposits from Solana**: `buildSolanaDepositForBurnTx` builds Circle's `depositForBurn` for the owner's wallet to sign (the recipient is the Chipi wallet, checked with `assertMintRecipient` before the transaction exists); `depositFromSolana` sends it through the wallet (Phantom, Solflare, Backpack… anything with `signAndSendTransaction`) and waits until the burn has landed, naming a failure instead of leaving the UI polling for a burn that never happened: `solana_insufficient_sol` (the burn creates a message account whose rent the owner pays, about 0.004 SOL), `solana_insufficient_usdc`, `solana_burn_failed`, `solana_burn_not_landed`. Then `registerCctpDeposit`, as for an EVM burn. `solanaUsdcBalance` reads the owner's USDC and whether its SOL covers the burn's rent.
+
+  ```ts
+  import { depositFromSolana } from "@chipi-stack/backend/solana";
+  const burn = await depositFromSolana({ connection, wallet: phantom, owner, amount: 1_000_000n, starknetRecipient: chipiWallet.publicKey });
+  await sdk.registerCctpDeposit({ burnTxHash: burn.burnTxHash, sourceDomain: burn.sourceDomain, mintRecipient: chipiWallet.publicKey, amountUsdc: "1" }, bearerToken);
+  ```
+- **Withdrawals to Solana**: `buildCctpWithdrawToSolanaCalls` names the owner's USDC **token account** as the mint recipient (never the owner key: `receiveMessage` mints to the account the message names, and a wrong one strands the USDC); `isSolanaWalletAddress` refuses a token account or program address typed as the owner, `solanaUsdcAtaExists` checks the account exists (Circle does not create it), `assertSolanaMintRecipient` checks the encoding before signing.
+- **For relayers**: `buildSolanaReceiveMessageTx` (the source domain, nonce and burn token come from the message itself) and `isSolanaCctpMessageUsed` (the used-nonce account).
+- **Constants**: `SOLANA_CCTP` (programs, USDC mint, fee recipient, domain 5), `solanaCctpPdas`, `SOLANA_CCTP_PROGRAMS`, `SOLANA_USDC_MINT`, `SOLANA_CCTP_DISCRIMINATORS`, `SOLANA_BURN_MIN_LAMPORTS`; byte helpers `hexToBytes`, `bytesToHex`, `u64le`, `u32le`, `readU64le`.
+
+### Who pays
+
+- Depositing from Solana: the owner pays Solana's fee plus the message account's rent (about 0.004 SOL). Standard finality on Solana is about 25 seconds and free, so there is no fast fee to weigh. Chipi pays the Starknet mint, as from Base.
+- Withdrawing to Solana: as to an EVM chain (no gas on Starknet; Circle's fast fee, paid back by Chipi under its sponsorship policy).
+
+### Docs
+
+- The [Cross-chain USDC](https://docs.chipipay.com/sdk/guides/cross-chain-usdc) guide has a *Solana (optional entry point)* section with the deposit and withdrawal snippets.
+
+### Not in this release
+
+A React hook for Solana deposits (`useCrossChainDeposit` is EIP-1193 only; `depositFromSolana` + `registerCctpDeposit` is the same two-step flow by hand). `@solana/web3.js` v1 wants a global `Buffer` in the browser: polyfill it before importing the entry point.
+
+### Verification
+
+Unit tests in `chipi-pay/sdks` pin every program-derived address against Solana mainnet (read 2026-10-26), the `depositForBurn` and `receiveMessage` instruction layouts byte for byte, the recipient gates, and a `receiveMessage` built from a real attested CCTP message retargeted to Solana. Pending: a $1 live deposit from a Solana wallet.
+
+## v14.18.0 (2026-10-26)
+
+Fund a Chipi wallet from any chain. A user with native USDC on **Base** (or Arbitrum, Optimism, Polygon or Ethereum) brings it into their Chipi wallet on Starknet through Circle's Cross-Chain Transfer Protocol (CCTP V2), and sends it back out, with one hook each: USDC is burned on one chain and minted on the other by Circle, no bridge token and no custodian. The app shows both speeds and prices before anything is signed, the Starknet mint is paid by Chipi, and a deposit completes even if the user closes the page. Everything is additive: 14.17.x code keeps working unchanged.
+
+Walkthrough: [tutorial 06](./tutorials/06-fund-from-base) (a passkey wallet funded from Base: quote both speeds, burn, close the page, follow it from any device).
+
+### `@chipi-stack/chipi-react` (and `nextjs`)
+
+- **`useCrossChainDeposit()`**: `quote({ chain, amount })` returns both speeds (fee in bps and USDC, net amount, ETA) from Circle's live fee API; `depositAsync` burns through the user's EVM wallet (any EIP-1193 provider; one prompt when the wallet batches with EIP-5792, two otherwise), registers the burn with Chipi the moment its hash exists, waits for Chipi's mint on Starknet and records the deposit in the wallet's history. `onStatus` reports each step with how long it usually takes. The recipient is always the Chipi wallet and is checked before signing. A `CrossChainDepositError` carries the `burnTxHash`: the USDC left the source chain and is in flight, not lost.
+
+  ```tsx
+  const { quote, depositAsync } = useCrossChainDeposit();
+  const quotes = await quote({ chain: BASE, amount: "25" }); // quotes.standard (free), quotes.fast (Circle's fee)
+  await depositAsync({
+    provider: evmWallet.provider,
+    chain: BASE,
+    amount: "25",
+    walletAddress: chipiWallet.publicKey,
+    finality: "standard",
+    getBearerToken,
+    onStatus: ({ step, eta }) => setStatus(`${step}: ${formatCctpEta(eta)}`),
+  });
+  ```
+- **`useCctpDepositStatus({ burnTxHash })`**: `PENDING` | `MINTED` (with `mintTx`) | `FAILED` | `UNREGISTERED`, polled while pending. Keep the burn hash and a deposit can be followed on any device.
+- **`useCrossChainWithdraw()`**: quote with Chipi (Circle's fast fee and whether Chipi pays it back for this user), burn on Starknet with the wallet's own signer (passkey or `encryptKey`), wait, record, and have Chipi's relayer deliver on the destination chain. Always fast finality: a standard transfer out of Starknet waits hours for the L1 proof. The destination address is checked (hex, non-zero, EIP-55 when mixed case) before signing.
+
+### `@chipi-stack/backend`
+
+- **`ChipiSDK.registerCctpDeposit`, `getCctpDepositStatus`, `recordCrossChainDeposit`, `quoteCrossChainWithdrawal`, `recordCrossChainWithdrawal`, `finalizeCrossChainWithdrawal`**: the chipi-back endpoints behind the hooks, for servers (secret key) or browsers (bearer token).
+- **Building blocks**, browser-safe: `CCTP_EVM_CHAINS` / `cctpEvmChainByKey` (Base, Arbitrum, Optimism, Polygon, Ethereum: chain id, Circle domain, native USDC, explorer; `verified: true` marks Base, where Chipi has run real transfers), `CCTP_STARKNET` (Circle's `TokenMessengerMinterV2`, `MessageTransmitterV2`, native USDC, domain 25); `cctpQuote`, `cctpRoute`, `cctpAttestationEta`, `cctpStepEta`, `formatCctpEta` (fees and attestation times per source chain and finality); `depositFromEvm`, `discoverEvmWallets` (EIP-6963); `buildCctpWithdrawToEvmCalls`, `buildCctpWithdrawCalls`, `cctpMaxFee`, `buildCctpReceiveMessageCall`; `starknetAddressToMintRecipient`, `assertMintRecipient`, `evmAddressToMintRecipient`, `assertEvmAddress`, `parseUsdc`, `formatUsdc`; `decodeCctpMessage`, `isCctpMessageExpired`.
+
+### `@chipi-stack/types`, `@chipi-stack/shared`
+
+- `CctpEvmChain`, `CctpFinality`, `CctpDepositStatus`, `RegisterCctpDepositParams`, `RecordCrossChainDepositParams`, `QuoteCrossChainWithdrawalParams`, `CrossChainWithdrawalQuote`, `RecordCrossChainWithdrawalParams`, `CrossChainWithdrawalRecord`, `FinalizeCrossChainWithdrawalParams`; `API_ENDPOINTS.CCTP`.
+
+### Who pays
+
+- Depositing: the user pays gas on the source chain (cents on an L2). **Standard** is free and takes about 15–20 minutes from an L2 (Circle waits for Ethereum finality). **Fast** takes about a minute for Circle's fee (1.3 bps from Base on 2026-10-24), taken from the amount and shown before signing. Chipi pays the Starknet mint.
+- Withdrawing: no gas (Chipi's paymaster); Circle's fast fee out of Starknet (12 bps), paid back to the recipient by Chipi under its sponsorship policy (`quoteCrossChainWithdrawal` says whether it is for this user).
+
+### Docs
+
+- New [Cross-chain USDC](https://docs.chipipay.com/sdk/guides/cross-chain-usdc) guide, hook pages for `useCrossChainDeposit`, `useCctpDepositStatus` and `useCrossChainWithdraw` (Next.js and React), the six endpoints in the API reference (Cross-chain), and v14.18.0 release notes.
+
+### Not in this release
+
+Solana (shipped in 14.19.0 as an optional entry point), Expo (`depositFromEvm` needs a browser EIP-1193 provider), Python. Arbitrum, Optimism, Polygon and Ethereum are wired and listed but not yet exercised end to end by Chipi (`verified: false`).
+
+### Verification
+
+Unit tests in `chipi-pay/sdks` pin the encodings, the Starknet calls and the EVM calldata against a real mainnet burn and Circle's attested messages for it, run `depositFromEvm` on a scripted EIP-1193 provider (chain switch and refusal, allowance, EIP-5792 batch and fallback, fast `maxFee`, reverted burn), and cover the three hooks and every `ChipiSDK` method's HTTP request. Every address in `CCTP_EVM_CHAINS` answered `eth_getCode` with bytecode on 2026-10-24. On 2026-10-25 the SDK's `depositForBurn` calldata was simulated with `eth_call` on Base's `TokenMessengerV2` from a real depositor (standard, and fast with the quoted fee: accepted; over-allowance, zero recipient and `maxFee ≥ amount`: reverted with Circle's own messages). Tutorial 06 type-checks, lints and builds against tarballs packed from the release branch. Pending: a $1 live deposit through tutorial 06 after the publish.
+
+## v14.17.2 (2026-10-23)
+
+Recovery support, all additive.
+
+### `@chipi-stack/backend`
+
+- `updateWalletEncryption` accepts optional `credentialId`, `prfSupported` and `authMethod`, so a wallet record can point at the passkey that now encrypts the key (after a migration or a recovery). They are sent only when set: without them the request body is exactly what earlier versions send.
+- `ChipiSDK.executeWithStarkKey` and the `useStarkKeyExecute` hook (React, Next.js): run calls signed by a STARK key at a given owner index. Every other signing path signs as owner 0; this is for the key a guardian recovery adds, which then rotates owner 0 onto a fresh key.
+- `ChipiSDK.finalizeRecovery`: finalize a guardian recovery after its 7 days, gaslessly and with no signature (`POST /transactions/finalize-recovery`).
+- `ChipiSDK.updateWalletEncryption`: the wallet-record update for servers (uses the secret key when no bearer token is passed).
+- `createStarkOwnerKey(encryptKey)`: a fresh STARK owner key, returned only encrypted (`{ publicKey, encryptedPrivateKey }`).
+- `rotateOwnerPayload(ownerId, newPubkeyHash)` and `removeOwnerPayload(ownerId)`: the payloads `ROTATE_OWNER` and `REMOVE_OWNER` ops commit to, pinned against the contract, so an app can check what a proposal does from its `OpProposed` event.
+
+### `@chipi-stack/chipi-react`, `nextjs`, `chipi-expo`
+
+- `useMigrateWalletToPasskey` also records the new passkey's `credentialId` and `prfSupported`. Before, a migrated wallet kept the old passkey id, so another device couldn't find the passkey that unlocks it.
+
+## v14.17.1 (2026-10-16)
+
+### `@chipi-stack/backend`
+
+- SHHH governance reads: `readPendingOp(provider, wallet, opId)` returns an op's on-chain state (`executed`, `cancelled`, `validAfter`, `expiresAt`, `payload`), or `null` if the wallet has no such op. `addOwnerPayload(newOwner)` returns the payload an `ADD_OWNER` op commits to, so an app can check which owner a proposal adds (it matches `ShhhAccount`'s `_payload_add_owner`, pinned against snforge). `decodeShhhPendingOp` and the `ShhhPendingOp` type are exported too.
+
+## v14.17.0 (2026-10-14)
 
 New SHHH wallets deploy **V8.5**, which enforces the threshold when one owner signs alone (V8.4 ignored it there; no mainnet wallet was affected, since none had a threshold above 1). Bramble, the Starknet browser-extension wallet, becomes a first-class example. A user's own Starknet wallet (Bramble, Braavos, Ready, or another Chipi wallet) can co-own or guard their Chipi wallet: it keeps its key, approves with `wallet_signTypedData`, and Chipi relays gaslessly. Connect with Chipi sits quietly next to Bramble. Everything else is additive: 14.16.x code keeps working unchanged.
 
