@@ -2,6 +2,40 @@
 
 All notable changes to the `@chipi-stack` SDK packages are documented here.
 
+## v14.19.0 (2026-10-26)
+
+Solana joins cross-chain USDC, as an optional entry point: `@chipi-stack/backend/solana`. It needs `@solana/web3.js` (an optional peer dependency), so apps that never touch Solana install nothing new. Everything else is unchanged from 14.18.0; the same `registerCctpDeposit`, `useCctpDepositStatus`, `recordCrossChainWithdrawal` and `finalizeCrossChainWithdrawal` carry a Solana burn the way they carry a Base one.
+
+### `@chipi-stack/backend/solana`
+
+- **Deposits from Solana**: `buildSolanaDepositForBurnTx` builds Circle's `depositForBurn` for the owner's wallet to sign (the recipient is the Chipi wallet, checked with `assertMintRecipient` before the transaction exists); `depositFromSolana` sends it through the wallet (Phantom, Solflare, Backpack… anything with `signAndSendTransaction`) and waits until the burn has landed, naming a failure instead of leaving the UI polling for a burn that never happened: `solana_insufficient_sol` (the burn creates a message account whose rent the owner pays, about 0.004 SOL), `solana_insufficient_usdc`, `solana_burn_failed`, `solana_burn_not_landed`. Then `registerCctpDeposit`, as for an EVM burn. `solanaUsdcBalance` reads the owner's USDC and whether its SOL covers the burn's rent.
+
+  ```ts
+  import { depositFromSolana } from "@chipi-stack/backend/solana";
+  const burn = await depositFromSolana({ connection, wallet: phantom, owner, amount: 1_000_000n, starknetRecipient: chipiWallet.publicKey });
+  await sdk.registerCctpDeposit({ burnTxHash: burn.burnTxHash, sourceDomain: burn.sourceDomain, mintRecipient: chipiWallet.publicKey, amountUsdc: "1" }, bearerToken);
+  ```
+- **Withdrawals to Solana**: `buildCctpWithdrawToSolanaCalls` names the owner's USDC **token account** as the mint recipient (never the owner key: `receiveMessage` mints to the account the message names, and a wrong one strands the USDC); `isSolanaWalletAddress` refuses a token account or program address typed as the owner, `solanaUsdcAtaExists` checks the account exists (Circle does not create it), `assertSolanaMintRecipient` checks the encoding before signing.
+- **For relayers**: `buildSolanaReceiveMessageTx` (the source domain, nonce and burn token come from the message itself) and `isSolanaCctpMessageUsed` (the used-nonce account).
+- **Constants**: `SOLANA_CCTP` (programs, USDC mint, fee recipient, domain 5), `solanaCctpPdas`, `SOLANA_CCTP_PROGRAMS`, `SOLANA_USDC_MINT`, `SOLANA_CCTP_DISCRIMINATORS`, `SOLANA_BURN_MIN_LAMPORTS`; byte helpers `hexToBytes`, `bytesToHex`, `u64le`, `u32le`, `readU64le`.
+
+### Who pays
+
+- Depositing from Solana: the owner pays Solana's fee plus the message account's rent (about 0.004 SOL). Standard finality on Solana is about 25 seconds and free, so there is no fast fee to weigh. Chipi pays the Starknet mint, as from Base.
+- Withdrawing to Solana: as to an EVM chain (no gas on Starknet; Circle's fast fee, paid back by Chipi under its sponsorship policy).
+
+### Docs
+
+- The [Cross-chain USDC](https://docs.chipipay.com/sdk/guides/cross-chain-usdc) guide has a *Solana (optional entry point)* section with the deposit and withdrawal snippets.
+
+### Not in this release
+
+A React hook for Solana deposits (`useCrossChainDeposit` is EIP-1193 only; `depositFromSolana` + `registerCctpDeposit` is the same two-step flow by hand). `@solana/web3.js` v1 wants a global `Buffer` in the browser: polyfill it before importing the entry point.
+
+### Verification
+
+Unit tests in `chipi-pay/sdks` pin every program-derived address against Solana mainnet (read 2026-10-26), the `depositForBurn` and `receiveMessage` instruction layouts byte for byte, the recipient gates, and a `receiveMessage` built from a real attested CCTP message retargeted to Solana. Pending: a $1 live deposit from a Solana wallet.
+
 ## v14.18.0 (2026-10-26)
 
 Fund a Chipi wallet from any chain. A user with native USDC on **Base** (or Arbitrum, Optimism, Polygon or Ethereum) brings it into their Chipi wallet on Starknet through Circle's Cross-Chain Transfer Protocol (CCTP V2), and sends it back out, with one hook each: USDC is burned on one chain and minted on the other by Circle, no bridge token and no custodian. The app shows both speeds and prices before anything is signed, the Starknet mint is paid by Chipi, and a deposit completes even if the user closes the page. Everything is additive: 14.17.x code keeps working unchanged.
@@ -48,7 +82,7 @@ Walkthrough: [tutorial 06](./tutorials/06-fund-from-base) (a passkey wallet fund
 
 ### Not in this release
 
-Solana (coming as an optional entry point), Expo (`depositFromEvm` needs a browser EIP-1193 provider), Python. Arbitrum, Optimism, Polygon and Ethereum are wired and listed but not yet exercised end to end by Chipi (`verified: false`).
+Solana (shipped in 14.19.0 as an optional entry point), Expo (`depositFromEvm` needs a browser EIP-1193 provider), Python. Arbitrum, Optimism, Polygon and Ethereum are wired and listed but not yet exercised end to end by Chipi (`verified: false`).
 
 ### Verification
 

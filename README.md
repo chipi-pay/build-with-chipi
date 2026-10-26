@@ -19,7 +19,7 @@ Developer hub for **@chipi-stack** — the SDK suite for building gasless Starkn
 | [`@chipi-stack/shared`](https://www.npmjs.com/package/@chipi-stack/shared) | ![npm](https://img.shields.io/npm/v/@chipi-stack/shared) | Shared utilities, constants, and helpers |
 | [`@chipi-stack/starknet-connector`](https://www.npmjs.com/package/@chipi-stack/starknet-connector) | ![npm](https://img.shields.io/npm/v/@chipi-stack/starknet-connector) | "Connect with Chipi" — a starknet-react connector so any Starknet dApp connects to a Chipi wallet (passkey, gasless, no extension) |
 
-The tutorials target **14.18.0** for the `@chipi-stack/*` SDK packages (tutorial 06, see the [CHANGELOG](./CHANGELOG.md)), **14.17.0** for tutorials 03–05, and **0.5.0** for `@chipi-stack/starknet-connector`. The badges show what npm serves today.
+The tutorials target **14.18.0** for the `@chipi-stack/*` SDK packages (tutorial 06; 14.19.0 adds Solana as an optional entry point, see the [CHANGELOG](./CHANGELOG.md)), **14.17.0** for tutorials 03–05, and **0.5.0** for `@chipi-stack/starknet-connector`. The badges show what npm serves today.
 
 ## What you can build
 
@@ -28,7 +28,7 @@ The tutorials target **14.18.0** for the `@chipi-stack/*` SDK packages (tutorial
 - **AI agent payments** — autonomous pay-per-use APIs with x402 protocol
 - **Crypto checkout buttons** — drop-in React components for e-commerce
 - **Remittance platforms** — cross-border USDC transfers on Starknet L2
-- **Fund from any chain** — bring USDC from Base (or Arbitrum, Optimism, Polygon, Ethereum) into a Chipi wallet with Circle's CCTP, and withdraw back out
+- **Fund from any chain** — bring USDC from Base (or Arbitrum, Optimism, Polygon, Ethereum, and Solana from 14.19.0) into a Chipi wallet with Circle's CCTP, and withdraw back out
 - **SKU marketplaces** — airtime top-ups, bill pay, gift cards
 - **Gaming reward systems** — on-chain rewards without users knowing it's crypto
 - **SaaS with wallet-per-user** — server-side wallet provisioning via backend SDK
