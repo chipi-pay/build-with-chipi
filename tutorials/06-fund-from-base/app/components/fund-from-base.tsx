@@ -6,7 +6,7 @@ import { formatCctpEta, type CctpFinality, type CctpQuote, type CctpStep } from 
 import { getChipiToken } from "@/lib/chipi-token";
 import { USDC_DECIMALS, formatUnits, parseUsdcInput } from "@/lib/config";
 import { BASE, baseUsdcBalance } from "@/lib/base";
-import { readPendingDepositRaw, savePendingDeposit } from "@/lib/deposit-store";
+import { readPendingDepositRaw, savePendingDeposit, storageReady } from "@/lib/deposit-store";
 import type { ConnectedEvmWallet } from "./pick-evm-wallet";
 
 /** What the user reads at each step. The duration is the SDK's estimate for the route, never a number typed here. */
@@ -65,6 +65,11 @@ export function FundFromBase({ evm, chipiWallet }: { evm: ConnectedEvmWallet; ch
   // One record per Chipi wallet (lib/deposit-store.ts): a second deposit would
   // replace the hash step 5 is following. Finish or forget it first.
   const inFlight = () => {
+    if (!storageReady()) {
+      // Fail closed: without storage the page couldn't keep the burn hash, and a burn must never go untracked.
+      setError("Browser storage is unavailable, so this page cannot track a deposit. Enable site storage and try again.");
+      return true;
+    }
     if (!readPendingDepositRaw(chipiWallet)) return false;
     setError("A deposit is already in flight for this wallet. Wait for it in step 5, or forget it there, before starting another.");
     return true;
@@ -102,8 +107,11 @@ export function FundFromBase({ evm, chipiWallet }: { evm: ConnectedEvmWallet; ch
         getBearerToken: getChipiToken, // asked fresh at every step; tokens expire during the wait
         onStatus: ({ step, eta, burnTxHash }) => {
           // The moment the burn hash exists, remember it: step 5 follows it even after a reload.
+          // savePendingDeposit never throws: the SDK registers the burn right after this callback.
           if (burnTxHash && !readPendingDepositRaw(chipiWallet)) {
-            savePendingDeposit(chipiWallet, { burnTxHash, amountUsdc: q.amountUsdc, startedAt: Date.now() });
+            if (!savePendingDeposit(chipiWallet, { burnTxHash, amountUsdc: q.amountUsdc, startedAt: Date.now() })) {
+              setError(`The browser refused to save this deposit. Keep the burn hash to follow it: ${burnTxHash}`);
+            }
           }
           setStatus(stepLabel(step, formatCctpEta(eta)));
         },

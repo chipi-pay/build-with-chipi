@@ -6,7 +6,7 @@ Your users' USDC is on Base, not on Starknet. This app brings it over in one hoo
 2. **Create the wallet.** A Chipi passkey wallet on Starknet.
 3. **Pick a Base wallet.** MetaMask, Rabby, Coinbase Wallet… (EIP-6963).
 4. **Bring USDC.** Quote both speeds first, then one hook: switch to Base, approve + burn, register with Chipi, mint on Starknet.
-5. **Follow it.** From the burn hash, after a reload or a closed tab. The deposit completes without the page.
+5. **Follow it.** From the burn hash, after a reload or a closed tab. Once the burn is registered with Chipi (the `registering` step, right after the burn), the deposit completes without the page; if the page closed before that, this step registers it.
 
 Requires `@chipi-stack/nextjs` and `@chipi-stack/backend` **14.18.0** or later. Starknet **mainnet** and Base **mainnet** only.
 
@@ -128,7 +128,9 @@ const { data } = useCctpDepositStatus({ burnTxHash, getBearerToken: getChipiToke
 // data.status: "PENDING" | "MINTED" (data.mintTx) | "FAILED" | "UNREGISTERED"
 ```
 
-It polls chipi-back every 15 seconds while `PENDING` and stops on anything else. Reload, close the tab, come back after lunch: the hash is all it needs. `localStorage` is one browser, though: to follow a deposit from another device, keep the hash on your server with the user's record and hand it to `useCctpDepositStatus` there. The deposit itself never depends on the browser: Chipi has the hash from `registerCctpDeposit`.
+It polls chipi-back every 15 seconds while `PENDING` and stops on anything else. Reload, close the tab, come back after lunch: the hash is all it needs. `localStorage` is one browser, though: to follow a deposit from another device, keep the hash on your server with the user's record and hand it to `useCctpDepositStatus` there. Once registered, the deposit itself never depends on the browser: Chipi has the hash from `registerCctpDeposit`.
+
+The one gap is the second between the burn and `registerCctpDeposit`: close the page there and the burn is `UNREGISTERED` (Chipi has never seen it; the USDC is safe, the message is mintable at any time). The hash was saved before registration, so the component offers **Register it with Chipi**, which calls `chipiSDK.registerCctpDeposit` with the same hash, source domain, recipient and amount; the status turns `PENDING` and the mint follows. If storage refused the write, the page shows the hash instead: keep it and register it the same way.
 
 ## 7. Going to production
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { useCctpDepositStatus } from "@chipi-stack/nextjs";
+import { useCctpDepositStatus, useChipiContext } from "@chipi-stack/nextjs";
 import { getChipiToken } from "@/lib/chipi-token";
 import { STARKNET_USDC, USDC_DECIMALS, formatUnits } from "@/lib/config";
 import { BASE } from "@/lib/base";
@@ -19,10 +19,31 @@ export function DepositProgress({ chipiWallet }: { chipiWallet: string }) {
   const raw = useSyncExternalStore(subscribePendingDeposit, () => readPendingDepositRaw(chipiWallet), () => null);
   const pending = useMemo(() => parsePendingDeposit(raw), [raw]);
   const [starknetUsdc, setStarknetUsdc] = useState<bigint | null>(null);
+  const { chipiSDK } = useChipiContext();
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   // Polls chipi-back every 15 s while PENDING, then stops.
-  const { data, error } = useCctpDepositStatus({ burnTxHash: pending?.burnTxHash ?? null, getBearerToken: getChipiToken });
+  const { data, error, refetch } = useCctpDepositStatus({ burnTxHash: pending?.burnTxHash ?? null, getBearerToken: getChipiToken });
   const status = data?.status;
+
+  // UNREGISTERED: the page closed between the burn and `registerCctpDeposit`
+  // (the hook does both, a second apart). The hash was saved first, so
+  // register it now and Chipi mints as usual.
+  const register = async () => {
+    if (!pending) return;
+    setRegisterError(null);
+    try {
+      const token = await getChipiToken();
+      if (!token) throw new Error("Not signed in: start again from step 1.");
+      await chipiSDK.registerCctpDeposit(
+        { burnTxHash: pending.burnTxHash, sourceDomain: BASE.domain, mintRecipient: chipiWallet, amountUsdc: pending.amountUsdc },
+        token
+      );
+      await refetch();
+    } catch (err) {
+      setRegisterError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +81,16 @@ export function DepositProgress({ chipiWallet }: { chipiWallet: string }) {
           )}
           {status === "FAILED" && <p className="text-xs text-red-400">Chipi could not mint it. Your USDC is safe; keep the burn hash and contact support.</p>}
           {status === "UNREGISTERED" && (
-            <p className="text-xs text-red-400">Chipi has no record of this burn. Keep the hash: a mint can be delivered at any time.</p>
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-red-400">
+                Chipi has no record of this burn (the page closed before it was registered). Register it now; a mint can be delivered
+                at any time.
+              </p>
+              <button onClick={register} className="w-fit text-xs underline">
+                Register it with Chipi
+              </button>
+              {registerError && <p className="text-xs text-red-400">{registerError}</p>}
+            </div>
           )}
           {error && <p className="text-xs text-red-400">{error.message}</p>}
           {status && status !== "PENDING" && (

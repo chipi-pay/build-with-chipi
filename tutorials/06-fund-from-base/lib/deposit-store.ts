@@ -19,19 +19,51 @@ function key(walletAddress: string): string {
   return `pending-deposit:${walletAddress.toLowerCase()}`;
 }
 
-export function savePendingDeposit(walletAddress: string, deposit: PendingDeposit): void {
-  localStorage.setItem(key(walletAddress), JSON.stringify(deposit));
-  window.dispatchEvent(new Event(EVENT));
+/**
+ * Remembers the deposit. Returns false when the browser refused the write
+ * (quota, blocked storage) and never throws: it runs inside the SDK's
+ * `onStatus`, between the burn and `registerCctpDeposit`, and an exception
+ * there would leave a burn unregistered.
+ */
+export function savePendingDeposit(walletAddress: string, deposit: PendingDeposit): boolean {
+  try {
+    localStorage.setItem(key(walletAddress), JSON.stringify(deposit));
+    window.dispatchEvent(new Event(EVENT));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function clearPendingDeposit(walletAddress: string): void {
-  localStorage.removeItem(key(walletAddress));
+  try {
+    localStorage.removeItem(key(walletAddress));
+  } catch {
+    // Blocked storage: nothing to forget there.
+  }
   window.dispatchEvent(new Event(EVENT));
 }
 
-/** For useSyncExternalStore: the stored string (same string, same snapshot), null on the server. */
+/** True when this browser lets the page read and write localStorage. Checked before a deposit starts. */
+export function storageReady(): boolean {
+  try {
+    const probe = "pending-deposit:probe";
+    localStorage.setItem(probe, "1");
+    localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** For useSyncExternalStore: the stored string (same string, same snapshot); null on the server or when storage is blocked. */
 export function readPendingDepositRaw(walletAddress: string): string | null {
-  return typeof window === "undefined" ? null : localStorage.getItem(key(walletAddress));
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key(walletAddress));
+  } catch {
+    return null;
+  }
 }
 
 export function parsePendingDeposit(raw: string | null): PendingDeposit | null {
